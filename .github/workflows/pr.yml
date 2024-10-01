@@ -1,0 +1,43 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: Run tests
+      run: make test
+    - name: Run build
+      run: make build
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+#      - name: Configure git for private modules
+#        uses: utilitywarehouse/internal-actions/setup-github-access@setup-github-access/v0.1.0
+#        with:
+#          github-token: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
+#          github-user: ${{ secrets.DEPLOY_GITHUB_USER }}
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: utilitywarehouse/go-actions/setup-go@v0.7.0
+        with:
+          go-version-file: "go.mod"
+      - name: Check modules
+        uses: utilitywarehouse/go-actions/check-mod@v0.7.0
