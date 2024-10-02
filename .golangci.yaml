@@ -10,7 +10,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/utilitywarehouse/go-mono)
+      - prefix(github.com/utilitywarehouse/tflint-ruleset-kafka)
   errcheck:
     check-type-assertions: true
     check-blank: true
