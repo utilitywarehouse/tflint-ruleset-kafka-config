@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+
 	"github.com/utilitywarehouse/tflint-ruleset-kafka-config/rules"
 )
 
