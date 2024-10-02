@@ -52,3 +52,9 @@ jobs:
             echo 'modules are not tidy, you need to run `go mod tidy`' >&2
             exit 1
           fi
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pre-commit/action@v3.0.1
