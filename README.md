@@ -17,8 +17,10 @@ plugin "kafka-config" {
 
 ## Rules
 
-|Name|Description|Severity|Enabled|Link|
-| --- | --- | --- | --- | --- |
+| Name                                              | Description                                                                              |
+|---------------------------------------------------|------------------------------------------------------------------------------------------|
+| [msk_module_backend](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team |
+
 
 ## Building the plugin
 
