@@ -64,4 +64,4 @@ With this rule, all the details for the bucket will always be specified in the k
 
 Define the S3 backend in the team's module, having the key as the team's suffix.
 
-See [good example](#good_example)
+See [good example](#good-example)
