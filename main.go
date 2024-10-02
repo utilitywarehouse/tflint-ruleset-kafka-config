@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/utilitywarehouse/tflint-ruleset-kafka-config/rules"
 )
 
 func main() {
@@ -10,7 +11,9 @@ func main() {
 		RuleSet: &tflint.BuiltinRuleSet{
 			Name:    "template",
 			Version: "0.1.0",
-			Rules:   []tflint.Rule{},
+			Rules: []tflint.Rule{
+				rules.NewTerraformBackendTypeRule(),
+			},
 		},
 	})
 }
