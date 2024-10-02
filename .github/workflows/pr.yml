@@ -21,7 +21,6 @@ jobs:
     - name: Run build
       run: make build
 
-
   mod:
     runs-on: ubuntu-latest
     steps:
