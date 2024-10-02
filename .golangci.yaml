@@ -1,7 +1,6 @@
 # options for analysis running
 run:
   timeout: 10m
-  tests: true
   # allow us to run an instance per project
   allow-parallel-runners: true
 
