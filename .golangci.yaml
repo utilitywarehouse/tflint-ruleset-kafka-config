@@ -1,0 +1,72 @@
+# options for analysis running
+run:
+  timeout: 10m
+  # allow us to run an instance per project
+  allow-parallel-runners: true
+
+# all available settings of specific linters
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/utilitywarehouse/tflint-ruleset-kafka)
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+  misspell:
+    locale: UK
+  prealloc:
+    for-loops: true
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: context-as-argument
+        disabled: false
+  nolintlint:
+    require-specific: true
+  wrapcheck:
+   ignorePackageGlobs:
+     # errgroup: these are just collecting errors that should already be wrapped
+     - "golang.org/x/sync/errgroup"
+  exhaustive:
+     default-signifies-exhaustive: true
+
+linters:
+  # enable all linters, explicitly disable the ones we don't want
+  enable-all: true
+
+  # think a linter does/doesn't belong in this list? Raise a PR to discuss
+  disable:
+    # deprecated linters
+    - execinquery
+    - exportloopref
+    - gomnd
+
+    # opinionated linters we don't agree with/linters we don't find value in
+    - dupl
+    - paralleltest
+    - perfsprint # stick with consistency over performance
+    - funlen
+    - lll # line length handled by golines
+    - nestif
+    - depguard
+    - exhaustruct
+    - gochecknoglobals
+    - err113
+    - mnd
+    - nilnil
+    - tagliatelle
+    - testpackage
+    - wsl
+    - errorlint
+    - ireturn
+    - nlreturn
+    - nonamedreturns
+    - varnamelen
+    - godox

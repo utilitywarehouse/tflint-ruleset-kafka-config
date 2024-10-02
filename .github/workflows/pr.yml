@@ -1,0 +1,60 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: Run tests
+      run: make test
+    - name: Run build
+      run: make build
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: mod-tidy
+        shell: bash
+        run: |
+          go mod tidy
+          
+          if ! git diff --quiet --exit-code -- go.mod go.sum
+          then
+            echo 'modules are not tidy, you need to run `go mod tidy`' >&2
+            exit 1
+          fi
+
+  lint-golangci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    env:
+      # we run this separately using golangci/golangci-lint-action
+      # which handles setup, the extra caching etc. for us
+      SKIP: golangci-lint-full
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pre-commit/action@v3.0.1

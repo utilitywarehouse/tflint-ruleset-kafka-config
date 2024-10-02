@@ -12,27 +12,27 @@ type TerraformBackendTypeRule struct {
 	tflint.DefaultRule
 }
 
-// NewTerraformBackendTypeRule returns a new rule
+// NewTerraformBackendTypeRule returns a new rule.
 func NewTerraformBackendTypeRule() *TerraformBackendTypeRule {
 	return &TerraformBackendTypeRule{}
 }
 
-// Name returns the rule name
+// Name returns the rule name.
 func (r *TerraformBackendTypeRule) Name() string {
 	return "terraform_backend_type"
 }
 
-// Enabled returns whether the rule is enabled by default
+// Enabled returns whether the rule is enabled by default.
 func (r *TerraformBackendTypeRule) Enabled() bool {
 	return true
 }
 
-// Severity returns the rule severity
+// Severity returns the rule severity.
 func (r *TerraformBackendTypeRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-// Link returns the rule reference link
+// Link returns the rule reference link.
 func (r *TerraformBackendTypeRule) Link() string {
 	return ""
 }
@@ -56,7 +56,7 @@ func (r *TerraformBackendTypeRule) Check(runner tflint.Runner) error {
 		},
 	}, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("querying: %w", err)
 	}
 
 	for _, terraform := range content.Blocks {
@@ -67,7 +67,7 @@ func (r *TerraformBackendTypeRule) Check(runner tflint.Runner) error {
 				backend.DefRange,
 			)
 			if err != nil {
-				return err
+				return fmt.Errorf("issue: %w", err)
 			}
 		}
 	}
