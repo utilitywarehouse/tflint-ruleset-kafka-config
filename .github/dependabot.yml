@@ -5,9 +5,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    pull-request-branch-name:
-      separator: "-"
-    open-pull-requests-limit: 4
     groups:
       all:
         patterns:
