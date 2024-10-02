@@ -28,16 +28,16 @@ jobs:
   mod:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure git for private modules
-        uses: utilitywarehouse/internal-actions/setup-github-access@setup-github-access/v0.1.0
-        with:
-          github-token: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
-          github-user: ${{ secrets.DEPLOY_GITHUB_USER }}
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Go
-        uses: utilitywarehouse/go-actions/setup-go@v0.7.0
-        with:
-          go-version-file: "go.mod"
-      - name: Check modules
-        uses: utilitywarehouse/go-actions/check-mod@v0.7.0
+      - name: mod-tidy
+        shell: bash
+#        working-directory: ${{ inputs.working-directory }}
+        run: |
+          go mod tidy
+          
+          if ! git diff --quiet --exit-code -- go.mod go.sum
+          then
+            echo 'modules are not tidy, you need to run `go mod tidy`' >&2
+            exit 1
+          fi
