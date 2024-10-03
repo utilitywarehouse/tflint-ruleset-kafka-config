@@ -38,7 +38,7 @@ func (r *MskModuleBackendRule) Severity() tflint.Severity {
 
 // Link returns the rule reference link.
 func (r *MskModuleBackendRule) Link() string {
-	return ""
+	return ReferenceLink(r.Name())
 }
 
 func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
