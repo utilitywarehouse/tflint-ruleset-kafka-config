@@ -13,7 +13,7 @@ func main() {
 			Name:    "kafka-config",
 			Version: "0.1.0",
 			Rules: []tflint.Rule{
-				rules.NewTerraformBackendTypeRule(),
+				rules.NewMskModuleBackendRule(),
 			},
 		},
 	})
