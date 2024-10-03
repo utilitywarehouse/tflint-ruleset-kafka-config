@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -20,7 +20,7 @@ func Test_MskModuleBackend(t *testing.T) {
 	}{
 		{
 			Name:    "backend doesn't have the team's suffix",
-			WorkDir: path.Join("dev-aws", "msk", "pubsub"),
+			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
@@ -106,7 +106,7 @@ terraform {
 		},
 		{
 			Name:    "backend defined in second terraform config",
-			WorkDir: path.Join("dev-aws", "msk", "pubsub"),
+			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
 			Files: map[string]string{
 				"env.tf": `
 terraform{
