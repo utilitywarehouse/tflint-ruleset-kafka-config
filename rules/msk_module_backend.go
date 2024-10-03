@@ -41,7 +41,6 @@ func (r *MskModuleBackendRule) Link() string {
 	return ""
 }
 
-// Check checks whether.
 func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 	path, err := runner.GetModulePath()
 	if err != nil {
