@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"path"
 	"testing"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -14,10 +15,12 @@ func Test_MskModuleBackend(t *testing.T) {
 	tests := []struct {
 		Name     string
 		Files    map[string]string
+		WorkDir  string
 		Expected helper.Issues
 	}{
 		{
-			Name: "backend doesn't have the team's suffix",
+			Name:    "backend doesn't have the team's suffix",
+			WorkDir: path.Join("dev-aws", "msk", "pubsub"),
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
@@ -29,7 +32,7 @@ terraform {
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "backend key must have the team's name 'rules' as a suffix. Current value is: dummy-key",
+					Message: "backend key must have the team's name 'pubsub' as a suffix. Current value is: dummy-key",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 5, Column: 5},
@@ -102,7 +105,8 @@ terraform {
 			},
 		},
 		{
-			Name: "backend defined in second terraform config",
+			Name:    "backend defined in second terraform config",
+			WorkDir: path.Join("dev-aws", "msk", "pubsub"),
 			Files: map[string]string{
 				"env.tf": `
 terraform{
@@ -112,7 +116,7 @@ terraform{
 terraform {
   backend "s3" {
 	bucket = "mybucket"
-	key    = "good-key-rules"
+	key    = "good-key-team-pubsub"
 	region = "us-east-1"
   }
 }`,
@@ -123,7 +127,7 @@ terraform {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			runner := helper.TestRunner(t, test.Files)
+			runner := WithWorkDir(helper.TestRunner(t, test.Files), test.WorkDir)
 
 			if err := rule.Check(runner); err != nil {
 				require.NoError(t, err, "Unexpected error occurred")
@@ -132,4 +136,19 @@ terraform {
 			helper.AssertIssues(t, test.Expected, runner.Issues)
 		})
 	}
+}
+
+type RunnerWithWorkDir struct {
+	*helper.Runner
+	workDir string
+}
+
+// WithWorkDir constructs a runner that always returns the set workdir when calling Originalwd.
+func WithWorkDir(h *helper.Runner, workDir string) *RunnerWithWorkDir {
+	return &RunnerWithWorkDir{Runner: h, workDir: workDir}
+}
+
+// Returns the set workdir.
+func (r *RunnerWithWorkDir) GetOriginalwd() (string, error) {
+	return r.workDir, nil
 }
