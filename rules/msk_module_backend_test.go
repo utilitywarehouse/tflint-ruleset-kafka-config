@@ -19,29 +19,6 @@ func Test_MskModuleBackend(t *testing.T) {
 		Expected helper.Issues
 	}{
 		{
-			Name:    "backend doesn't have the team's suffix",
-			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
-			Files: map[string]string{"backend.tf": `
-terraform {
-  backend "s3" {
-    bucket = "mybucket"
-    key    = "dummy-key"
-    region = "us-east-1"
-  }
-}`},
-			Expected: helper.Issues{
-				{
-					Rule:    rule,
-					Message: "backend key must have the team's name 'pubsub' as a suffix. Current value is: dummy-key",
-					Range: hcl.Range{
-						Filename: "backend.tf",
-						Start:    hcl.Pos{Line: 5, Column: 5},
-						End:      hcl.Pos{Line: 5, Column: 25},
-					},
-				},
-			},
-		},
-		{
 			Name:  "no terraform config defined",
 			Files: map[string]string{"empty.tf": ``},
 			Expected: helper.Issues{
@@ -100,6 +77,29 @@ terraform {
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 3, Column: 3},
 						End:      hcl.Pos{Line: 3, Column: 15},
+					},
+				},
+			},
+		},
+		{
+			Name:    "backend doesn't have the team's suffix",
+			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "mybucket"
+    key    = "dummy-key"
+    region = "us-east-1"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "backend key must have the team's name 'pubsub' as a suffix. Current value is: dummy-key",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 5, Column: 5},
+						End:      hcl.Pos{Line: 5, Column: 25},
 					},
 				},
 			},
