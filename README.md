@@ -7,7 +7,7 @@ This is a [tflint](https://github.com/terraform-linters/tflint) [plugin](https:/
 You can install the plugin with `tflint --init`. Declare a config in `.tflint.hcl` as follows:
 
 ```hcl
-plugin "kafka-config" {
+plugin "uw-kafka-config" {
   enabled = true
 
   version = "x.y.z"
