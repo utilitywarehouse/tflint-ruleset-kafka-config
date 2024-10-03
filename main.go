@@ -10,8 +10,7 @@ import (
 func main() {
 	plugin.Serve(&plugin.ServeOpts{
 		RuleSet: &tflint.BuiltinRuleSet{
-			Name:    "kafka-config",
-			Version: "0.1.0",
+			Name: "uw-kafka-config",
 			Rules: []tflint.Rule{
 				rules.NewMskModuleBackendRule(),
 			},

@@ -16,10 +16,10 @@ builds:
     hooks:
       post:
         - mkdir -p ./dist/raw
-        - cp "{{ .Path }}" "./dist/raw/{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+        - cp "{{ .Path }}" "./dist/raw/tflint-ruleset-uw-kafka-config_{{ .Os }}_{{ .Arch }}"
 archives:
   - id: zip
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "tflint-ruleset-uw-kafka-config_{{ .Os }}_{{ .Arch }}"
     format: zip
     files:
       - none*
