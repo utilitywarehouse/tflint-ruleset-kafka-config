@@ -31,15 +31,6 @@ terraform {
     region = "us-east-1"
   }
 }
-
-// Good example for team `pubsub`
-terraform {
-  backend "s3" {
-    bucket = "mybucket"
-    key    = "dev-aws/msk-pubsub"
-    region = "us-east-1"
-  }
-}
 ```
 
 ### Good example
