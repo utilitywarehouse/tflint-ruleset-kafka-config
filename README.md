@@ -19,7 +19,7 @@ plugin "kafka-config" {
 
 | Name                                              | Description                                                                              |
 |---------------------------------------------------|------------------------------------------------------------------------------------------|
-| [msk_module_backend](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team |
+| [msk_module_backend](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team (taken from the current directory name) |
 
 
 ## Building the plugin
