@@ -11,7 +11,7 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// MskModuleBackendRule checks whether an MSK module has an S3 backend defined with a key that has as suffix the name of the team.
+// MskModuleBackendRule checks whether an MSK module has an S3 backend defined with a key in the format {{env}}/{{cluster}}-{{team-name}}.
 type MskModuleBackendRule struct {
 	tflint.DefaultRule
 }
@@ -41,18 +41,9 @@ func (r *MskModuleBackendRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
-	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
-	}
-	if !path.IsRoot() {
-		// This rule does not evaluate child modules.
-		return nil
-	}
-
-	// This rule is an example to get attributes of blocks other than resources.
-	content, err := runner.GetModuleContent(&hclext.BodySchema{
+func (r *MskModuleBackendRule) getBackendContent(runner tflint.Runner) (*hclext.BodyContent, error) {
+	//nolint:wrapcheck
+	return runner.GetModuleContent(&hclext.BodySchema{
 		Blocks: []hclext.BlockSchema{
 			{
 				Type: "terraform",
@@ -63,6 +54,7 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 							LabelNames: []string{"type"},
 							Body: &hclext.BodySchema{
 								Attributes: []hclext.AttributeSchema{
+									{Name: "bucket"},
 									{Name: "key"},
 								},
 							},
@@ -72,6 +64,19 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 			},
 		},
 	}, nil)
+}
+
+func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
+	path, err := runner.GetModulePath()
+	if err != nil {
+		return fmt.Errorf("getting module path: %w", err)
+	}
+	if !path.IsRoot() {
+		// This rule does not evaluate child modules.
+		return nil
+	}
+
+	content, err := r.getBackendContent(runner)
 	if err != nil {
 		return fmt.Errorf("getting module content: %w", err)
 	}
@@ -94,16 +99,15 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 		return nil
 	}
 
-	keyAttr, keyExists := backend.Body.Attributes["key"]
-	if !keyExists {
-		err := runner.EmitIssue(r, "the s3 backend should specify the details inside the kafka MSK module", backend.DefRange)
-		if err != nil {
-			return fmt.Errorf("emitting issue: no s3 details: %w", err)
-		}
-		return nil
+	modInfo, err := r.parseModuleInfo(runner)
+	if err != nil {
+		return err
 	}
 
-	return r.checkKeyFormat(runner, keyAttr)
+	if err := r.checkBackendBucketFormat(runner, backend, modInfo); err != nil {
+		return err
+	}
+	return r.checkBackendKeyFormat(runner, backend, modInfo)
 }
 
 func findBackendDef(content *hclext.BodyContent) *hclext.Block {
@@ -118,30 +122,67 @@ func findBackendDef(content *hclext.BodyContent) *hclext.Block {
 	return nil
 }
 
-func (r *MskModuleBackendRule) checkKeyFormat(runner tflint.Runner, keyAttr *hclext.Attribute) error {
+type moduleInfo struct {
+	env        string
+	teamName   string
+	mskCluster string
+}
+
+func (r *MskModuleBackendRule) checkBackendBucketFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
+	bucketAttr, bucketExists := backend.Body.Attributes["bucket"]
+	if !bucketExists {
+		err := runner.EmitIssue(r, "the s3 backend should specify the bucket inside the kafka MSK module", backend.DefRange)
+		if err != nil {
+			return fmt.Errorf("emitting issue: no s3 bucket: %w", err)
+		}
+		return nil
+	}
+
+	var bucket string
+	diags := gohcl.DecodeExpression(bucketAttr.Expr, nil, &bucket)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	diags = gohcl.DecodeExpression(bucketAttr.Expr, nil, &bucket)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	envParts := strings.Split(mi.env, "-")
+	if !strings.Contains(bucket, envParts[0]) {
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf("backend bucket doesn't contain the env of the module. Current value '%s' should contain env '%s'", bucket, envParts[0]),
+			bucketAttr.Range,
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: bucket not in the correct format: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
+	keyAttr, keyExists := backend.Body.Attributes["key"]
+	if !keyExists {
+		err := runner.EmitIssue(r, "the s3 backend should specify the key inside the kafka MSK module", backend.DefRange)
+		if err != nil {
+			return fmt.Errorf("emitting issue: no s3 key: %w", err)
+		}
+		return nil
+	}
+
 	var key string
 	diags := gohcl.DecodeExpression(keyAttr.Expr, nil, &key)
 	if diags.HasErrors() {
 		return diags
 	}
 
-	modulePath, err := runner.GetOriginalwd()
-	if err != nil {
-		return fmt.Errorf("failed getting module path: %w", err)
-	}
-
-	pathElems := strings.Split(filepath.Clean(modulePath), string(filepath.Separator))
-	if len(pathElems) < 3 {
-		return fmt.Errorf("the module doesn't have the expected structure: the path should end with env/msk-cluster/team-name, but it is: %s", modulePath)
-	}
-
-	teamName := pathElems[len(pathElems)-1]
-	mskCluster := pathElems[len(pathElems)-2]
-	env := pathElems[len(pathElems)-3]
-	expectedKey := fmt.Sprintf("%s/%s-%s", env, mskCluster, teamName)
+	expectedKey := fmt.Sprintf("%s/%s-%s", mi.env, mi.mskCluster, mi.teamName)
 
 	if key != expectedKey {
-		err = runner.EmitIssue(
+		err := runner.EmitIssue(
 			r,
 			fmt.Sprintf("backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: '%s', current: '%s'", expectedKey, key),
 			keyAttr.Range,
@@ -152,4 +193,23 @@ func (r *MskModuleBackendRule) checkKeyFormat(runner tflint.Runner, keyAttr *hcl
 	}
 
 	return nil
+}
+
+func (r *MskModuleBackendRule) parseModuleInfo(runner tflint.Runner) (moduleInfo, error) {
+	modulePath, err := runner.GetOriginalwd()
+	if err != nil {
+		return moduleInfo{}, fmt.Errorf("failed getting module path: %w", err)
+	}
+
+	pathElems := strings.Split(filepath.Clean(modulePath), string(filepath.Separator))
+	if len(pathElems) < 3 {
+		return moduleInfo{}, fmt.Errorf("the module doesn't have the expected structure: the path should end with env/msk-cluster/team-name, but it is: %s", modulePath)
+	}
+
+	mi := moduleInfo{
+		teamName:   pathElems[len(pathElems)-1],
+		mskCluster: pathElems[len(pathElems)-2],
+		env:        pathElems[len(pathElems)-3],
+	}
+	return mi, nil
 }

@@ -68,17 +68,39 @@ terraform {
 			},
 		},
 		{
-			Name:    "backend doesn't specify properties",
+			Name:    "backend doesn't specify the bucket",
 			WorkDir: defaultWorkDir,
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
+    key = "dev-aws/kafka-shared-msk-pubsub"
   }
 }`},
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "the s3 backend should specify the details inside the kafka MSK module",
+					Message: "the s3 backend should specify the bucket inside the kafka MSK module",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 3, Column: 3},
+						End:      hcl.Pos{Line: 3, Column: 15},
+					},
+				},
+			},
+		},
+		{
+			Name:    "backend doesn't specify the key",
+			WorkDir: defaultWorkDir,
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "dummy-dev--bucket"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "the s3 backend should specify the key inside the kafka MSK module",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 3, Column: 3},
@@ -93,7 +115,7 @@ terraform {
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
-    bucket = "mybucket"
+    bucket = "my-dev-bucket"
     key    = "prod-aws/msk-cluster-pubsub"
     region = "us-east-1"
   }
@@ -116,7 +138,7 @@ terraform {
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
-    bucket = "mybucket"
+    bucket = "my-dev-bucket"
     key    = "dev-merit/dummy-cluster-otel"
     region = "us-east-1"
   }
@@ -139,7 +161,7 @@ terraform {
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
-    bucket = "mybucket"
+    bucket = "my-dev-bucket"
     key    = "dev-aws/msk-cluster-dummy-key"
     region = "us-east-1"
   }
@@ -157,6 +179,29 @@ terraform {
 			},
 		},
 		{
+			Name:    "backend bucket doesn't contain the env",
+			WorkDir: filepath.Join("config", "prod-aws", "msk-cluster", "pubsub"),
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "my-bucket"
+    key    = "prod-aws/msk-cluster-pubsub"
+    region = "us-east-1"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "backend bucket doesn't contain the env of the module. Current value 'my-bucket' should contain env 'prod'",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 4, Column: 5},
+						End:      hcl.Pos{Line: 4, Column: 25},
+					},
+				},
+			},
+		},
+		{
 			Name:    "good backend defined in second terraform config",
 			WorkDir: defaultWorkDir,
 			Files: map[string]string{
@@ -167,7 +212,7 @@ terraform{
 				"backend.tf": `
 terraform {
   backend "s3" {
-	bucket = "mybucket"
+	bucket = "my-dev-bucket"
 	key    = "dev-aws/kafka-shared-msk-pubsub"
 	region = "us-east-1"
   }
