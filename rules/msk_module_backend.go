@@ -103,7 +103,7 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 		return nil
 	}
 
-	return r.checkKeyHasTeamSuffix(runner, keyAttr)
+	return r.checkKeyFormat(runner, keyAttr)
 }
 
 func findBackendDef(content *hclext.BodyContent) *hclext.Block {
@@ -118,7 +118,7 @@ func findBackendDef(content *hclext.BodyContent) *hclext.Block {
 	return nil
 }
 
-func (r *MskModuleBackendRule) checkKeyHasTeamSuffix(runner tflint.Runner, keyAttr *hclext.Attribute) error {
+func (r *MskModuleBackendRule) checkKeyFormat(runner tflint.Runner, keyAttr *hclext.Attribute) error {
 	var key string
 	diags := gohcl.DecodeExpression(keyAttr.Expr, nil, &key)
 	if diags.HasErrors() {
@@ -130,16 +130,24 @@ func (r *MskModuleBackendRule) checkKeyHasTeamSuffix(runner tflint.Runner, keyAt
 		return fmt.Errorf("failed getting module path: %w", err)
 	}
 
-	teamName := filepath.Base(modulePath)
+	pathElems := strings.Split(filepath.Clean(modulePath), string(filepath.Separator))
+	if len(pathElems) < 3 {
+		return fmt.Errorf("the module doesn't have the expected structure: the path should end with env/msk-cluster/team-name, but it is: %s", modulePath)
+	}
 
-	if !strings.HasSuffix(key, teamName) {
+	teamName := pathElems[len(pathElems)-1]
+	mskCluster := pathElems[len(pathElems)-2]
+	env := pathElems[len(pathElems)-3]
+	expectedKey := fmt.Sprintf("%s/%s-%s", env, mskCluster, teamName)
+
+	if key != expectedKey {
 		err = runner.EmitIssue(
 			r,
-			fmt.Sprintf("backend key must have the team's name '%s' as a suffix. Current value is: %s", teamName, key),
+			fmt.Sprintf("backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: '%s', current: '%s'", expectedKey, key),
 			keyAttr.Range,
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: no team suffix: %w", err)
+			return fmt.Errorf("emitting issue: key not in the correct format: %w", err)
 		}
 	}
 

@@ -12,6 +12,8 @@ import (
 func Test_MskModuleBackend(t *testing.T) {
 	rule := NewMskModuleBackendRule()
 
+	defaultWorkDir := filepath.Join("kafka-cluster-config", "dev-aws", "kafka-shared-msk", "pubsub")
+
 	tests := []struct {
 		Name     string
 		Files    map[string]string
@@ -19,8 +21,9 @@ func Test_MskModuleBackend(t *testing.T) {
 		Expected helper.Issues
 	}{
 		{
-			Name:  "no terraform config defined",
-			Files: map[string]string{"empty.tf": ``},
+			Name:    "no terraform config defined",
+			WorkDir: defaultWorkDir,
+			Files:   map[string]string{"empty.tf": ``},
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
@@ -30,7 +33,8 @@ func Test_MskModuleBackend(t *testing.T) {
 			},
 		},
 		{
-			Name: "no backend defined",
+			Name:    "no backend defined",
+			WorkDir: defaultWorkDir,
 			Files: map[string]string{"env.tf": `
 terraform{
 	required_version = ">= 1.5.0"
@@ -44,7 +48,8 @@ terraform{
 			},
 		},
 		{
-			Name: "backend is not s3",
+			Name:    "backend is not s3",
+			WorkDir: defaultWorkDir,
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "local" {
@@ -63,7 +68,8 @@ terraform {
 			},
 		},
 		{
-			Name: "backend doesn't specify properties",
+			Name:    "backend doesn't specify properties",
+			WorkDir: defaultWorkDir,
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
@@ -82,31 +88,77 @@ terraform {
 			},
 		},
 		{
-			Name:    "backend doesn't have the team's suffix",
-			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
+			Name:    "backend key doesn't have the env prefix",
+			WorkDir: filepath.Join("config", "dev-gcp", "msk-cluster", "pubsub"),
 			Files: map[string]string{"backend.tf": `
 terraform {
   backend "s3" {
     bucket = "mybucket"
-    key    = "dummy-key"
+    key    = "prod-aws/msk-cluster-pubsub"
     region = "us-east-1"
   }
 }`},
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "backend key must have the team's name 'pubsub' as a suffix. Current value is: dummy-key",
+					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-gcp/msk-cluster-pubsub', current: 'prod-aws/msk-cluster-pubsub'",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 5, Column: 5},
-						End:      hcl.Pos{Line: 5, Column: 25},
+						End:      hcl.Pos{Line: 5, Column: 43},
 					},
 				},
 			},
 		},
 		{
-			Name:    "backend defined in second terraform config",
-			WorkDir: filepath.Join("dev-aws", "msk", "pubsub"),
+			Name:    "backend key doesn't have the msk cluster name",
+			WorkDir: filepath.Join("config", "dev-merit", "msk-cluster", "otel"),
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "mybucket"
+    key    = "dev-merit/dummy-cluster-otel"
+    region = "us-east-1"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-merit/msk-cluster-otel', current: 'dev-merit/dummy-cluster-otel'",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 5, Column: 5},
+						End:      hcl.Pos{Line: 5, Column: 44},
+					},
+				},
+			},
+		},
+		{
+			Name:    "backend key doesn't have the team's suffix",
+			WorkDir: filepath.Join("config", "dev-aws", "msk-cluster", "pubsub"),
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "mybucket"
+    key    = "dev-aws/msk-cluster-dummy-key"
+    region = "us-east-1"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-aws/msk-cluster-pubsub', current: 'dev-aws/msk-cluster-dummy-key'",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 5, Column: 5},
+						End:      hcl.Pos{Line: 5, Column: 45},
+					},
+				},
+			},
+		},
+		{
+			Name:    "good backend defined in second terraform config",
+			WorkDir: defaultWorkDir,
 			Files: map[string]string{
 				"env.tf": `
 terraform{
@@ -116,7 +168,7 @@ terraform{
 terraform {
   backend "s3" {
 	bucket = "mybucket"
-	key    = "good-key-team-pubsub"
+	key    = "dev-aws/kafka-shared-msk-pubsub"
 	region = "us-east-1"
   }
 }`,
@@ -136,6 +188,21 @@ terraform {
 			helper.AssertIssues(t, test.Expected, runner.Issues)
 		})
 	}
+
+	t.Run("the workdir doesn't have the expected structure", func(t *testing.T) {
+		files := map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "mybucket"
+    key    = "dev-aws/msk-cluster-pubsub"
+    region = "us-east-1"
+  }
+}`}
+		wrongWorkDir := "kafka-cluster-config"
+		runner := WithWorkDir(helper.TestRunner(t, files), wrongWorkDir)
+		err := rule.Check(runner)
+		require.ErrorContains(t, err, "the module doesn't have the expected structure")
+	})
 }
 
 type RunnerWithWorkDir struct {
