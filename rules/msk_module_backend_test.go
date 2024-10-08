@@ -123,7 +123,7 @@ terraform {
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-gcp/msk-cluster-pubsub', current: 'prod-aws/msk-cluster-pubsub'",
+					Message: "backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: 'dev-gcp/msk-cluster-pubsub', current: 'prod-aws/msk-cluster-pubsub'",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 5, Column: 5},
@@ -146,7 +146,7 @@ terraform {
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-merit/msk-cluster-otel', current: 'dev-merit/dummy-cluster-otel'",
+					Message: "backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: 'dev-merit/msk-cluster-otel', current: 'dev-merit/dummy-cluster-otel'",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 5, Column: 5},
@@ -169,7 +169,7 @@ terraform {
 			Expected: helper.Issues{
 				{
 					Rule:    rule,
-					Message: "backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: 'dev-aws/msk-cluster-pubsub', current: 'dev-aws/msk-cluster-dummy-key'",
+					Message: "backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: 'dev-aws/msk-cluster-pubsub', current: 'dev-aws/msk-cluster-dummy-key'",
 					Range: hcl.Range{
 						Filename: "backend.tf",
 						Start:    hcl.Pos{Line: 5, Column: 5},

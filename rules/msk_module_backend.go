@@ -11,7 +11,9 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// MskModuleBackendRule checks whether an MSK module has an S3 backend defined with a key in the format {{env}}/{{cluster}}-{{team-name}}.
+// MskModuleBackendRule checks whether an MSK module has an S3 backend defined with the following restrictions:
+//   - the key is in the format ${env}-${platform}/${msk-cluster}-${team-name}
+//   - the bucket contains the environment in its name
 type MskModuleBackendRule struct {
 	tflint.DefaultRule
 }
@@ -184,7 +186,7 @@ func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backe
 	if key != expectedKey {
 		err := runner.EmitIssue(
 			r,
-			fmt.Sprintf("backend key must have the following format: {{env}}/{{cluster}}-{{team-name}}. Expected: '%s', current: '%s'", expectedKey, key),
+			fmt.Sprintf("backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: '%s', current: '%s'", expectedKey, key),
 			keyAttr.Range,
 		)
 		if err != nil {
