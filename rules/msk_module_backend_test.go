@@ -202,6 +202,29 @@ terraform {
 			},
 		},
 		{
+			Name:    "module is not in the expected structure",
+			WorkDir: filepath.Join("config", "kafka-cluster-config"),
+			Files: map[string]string{"backend.tf": `
+terraform {
+  backend "s3" {
+    bucket = "my-bucket"
+    key    = "prod-aws/msk-cluster-pubsub"
+    region = "us-east-1"
+  }
+}`},
+			Expected: helper.Issues{
+				{
+					Rule:    rule,
+					Message: "the module doesn't have the expected structure: the path should end with '${env}-${platform}/${msk-cluster}/${team-name}', but it is: config/kafka-cluster-config",
+					Range: hcl.Range{
+						Filename: "backend.tf",
+						Start:    hcl.Pos{Line: 3, Column: 3},
+						End:      hcl.Pos{Line: 3, Column: 15},
+					},
+				},
+			},
+		},
+		{
 			Name:    "good backend defined in second terraform config",
 			WorkDir: defaultWorkDir,
 			Files: map[string]string{
@@ -233,21 +256,6 @@ terraform {
 			helper.AssertIssues(t, test.Expected, runner.Issues)
 		})
 	}
-
-	t.Run("the workdir doesn't have the expected structure", func(t *testing.T) {
-		files := map[string]string{"backend.tf": `
-terraform {
-  backend "s3" {
-    bucket = "mybucket"
-    key    = "dev-aws/msk-cluster-pubsub"
-    region = "us-east-1"
-  }
-}`}
-		wrongWorkDir := "kafka-cluster-config"
-		runner := WithWorkDir(helper.TestRunner(t, files), wrongWorkDir)
-		err := rule.Check(runner)
-		require.ErrorContains(t, err, "the module doesn't have the expected structure")
-	})
 }
 
 type RunnerWithWorkDir struct {

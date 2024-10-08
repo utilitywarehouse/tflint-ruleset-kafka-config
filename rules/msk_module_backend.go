@@ -83,33 +83,47 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 		return fmt.Errorf("getting module content: %w", err)
 	}
 
+	backend, err := r.validateBackendDef(runner, content)
+	if err != nil {
+		return err
+	}
+	if backend == nil {
+		return nil
+	}
+
+	modInfo, err := r.parseModuleInfo(runner, backend)
+	if err != nil {
+		return err
+	}
+	if modInfo == nil {
+		return nil
+	}
+
+	if err := r.checkBackendBucketFormat(runner, backend, *modInfo); err != nil {
+		return err
+	}
+	return r.checkBackendKeyFormat(runner, backend, *modInfo)
+}
+
+func (r *MskModuleBackendRule) validateBackendDef(runner tflint.Runner, content *hclext.BodyContent) (*hclext.Block, error) {
 	backend := findBackendDef(content)
 	if backend == nil {
 		err := runner.EmitIssue(r, "an s3 backend should be configured for a kafka MSK module", hcl.Range{})
 		if err != nil {
-			return fmt.Errorf("emitting issue: backend missing: %w", err)
+			return nil, fmt.Errorf("emitting issue: backend missing: %w", err)
 		}
-		return nil
+		return nil, nil
 	}
 
 	backendType := backend.Labels[0]
 	if backendType != "s3" {
 		err := runner.EmitIssue(r, "backend should always be s3 for a kafka MSK module", backend.DefRange)
 		if err != nil {
-			return fmt.Errorf("emitting issue: always s3: %w", err)
+			return nil, fmt.Errorf("emitting issue: always s3: %w", err)
 		}
-		return nil
+		return nil, nil
 	}
-
-	modInfo, err := r.parseModuleInfo(runner)
-	if err != nil {
-		return err
-	}
-
-	if err := r.checkBackendBucketFormat(runner, backend, modInfo); err != nil {
-		return err
-	}
-	return r.checkBackendKeyFormat(runner, backend, modInfo)
+	return backend, nil
 }
 
 func findBackendDef(content *hclext.BodyContent) *hclext.Block {
@@ -197,18 +211,26 @@ func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backe
 	return nil
 }
 
-func (r *MskModuleBackendRule) parseModuleInfo(runner tflint.Runner) (moduleInfo, error) {
+func (r *MskModuleBackendRule) parseModuleInfo(runner tflint.Runner, backend *hclext.Block) (*moduleInfo, error) {
 	modulePath, err := runner.GetOriginalwd()
 	if err != nil {
-		return moduleInfo{}, fmt.Errorf("failed getting module path: %w", err)
+		return nil, fmt.Errorf("failed getting module path: %w", err)
 	}
 
 	pathElems := strings.Split(filepath.Clean(modulePath), string(filepath.Separator))
 	if len(pathElems) < 3 {
-		return moduleInfo{}, fmt.Errorf("the module doesn't have the expected structure: the path should end with env/msk-cluster/team-name, but it is: %s", modulePath)
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf("the module doesn't have the expected structure: the path should end with '${env}-${platform}/${msk-cluster}/${team-name}', but it is: %s", modulePath),
+			backend.DefRange,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("emitting issue: module not in the right structure: %w", err)
+		}
+		return nil, nil
 	}
 
-	mi := moduleInfo{
+	mi := &moduleInfo{
 		teamName:   pathElems[len(pathElems)-1],
 		mskCluster: pathElems[len(pathElems)-2],
 		env:        pathElems[len(pathElems)-3],
