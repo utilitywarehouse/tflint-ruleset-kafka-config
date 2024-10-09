@@ -17,10 +17,11 @@ plugin "uw-kafka-config" {
 
 ## Rules
 
-| Name                                              | Description                                                                              |
-|---------------------------------------------------|------------------------------------------------------------------------------------------|
-| [msk_module_backend](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team (taken from the current directory name) |
-| [`msk_app_topics`](rules/msk_app_topics.md) | Requires apps consume from and produce to only topics define in their module. |
+| Name                                              | Description                                                                                                                      |
+|---------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| [`msk_module_backend`](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team (taken from the current directory name) |
+| [`msk_app_topics`](rules/msk_app_topics.md)       | Requires apps consume from and produce to only topics define in their module.                                                    |
+| [`msk_topic`](rules/msk_topic.md)                 | Requires defined topics in a module to belong to that team.                                                                      |
 
 
 ## Building the plugin
