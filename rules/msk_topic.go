@@ -85,7 +85,7 @@ func (r *MskTopicRule) validateTopic(runner tflint.Runner, topic *hclext.Block, 
 			nameAttr.Range,
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: module not in the right structure: %w", err)
+			return fmt.Errorf("emitting issue: topic name doesn't have the team prefix: %w", err)
 		}
 	}
 	return nil
