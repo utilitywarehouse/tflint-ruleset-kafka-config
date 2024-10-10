@@ -80,7 +80,12 @@ func (r *MskTopicNameRule) Check(runner tflint.Runner) error {
 	return nil
 }
 
-func (r *MskTopicNameRule) validateTopicName(runner tflint.Runner, topic *hclext.Block, teamName string, aliases map[string][]string) error {
+func (r *MskTopicNameRule) validateTopicName(
+	runner tflint.Runner,
+	topic *hclext.Block,
+	teamName string,
+	aliases map[string][]string,
+) error {
 	resourceName := topic.Labels[1]
 	nameAttr := topic.Body.Attributes["name"]
 
@@ -97,7 +102,12 @@ func (r *MskTopicNameRule) validateTopicName(runner tflint.Runner, topic *hclext
 
 	var im string
 	if len(teamAliases) != 0 {
-		im = fmt.Sprintf("topic name must be prefixed with the team name '%s' or one of its aliases '%s'. Current value is '%s'", teamName, strings.Join(teamAliases, ","), topicName)
+		im = fmt.Sprintf(
+			"topic name must be prefixed with the team name '%s' or one of its aliases '%s'. Current value is '%s'",
+			teamName,
+			strings.Join(teamAliases, ","),
+			topicName,
+		)
 	} else {
 		im = fmt.Sprintf("topic name must be prefixed with the team name '%s'. Current value is '%s'", teamName, topicName)
 	}
