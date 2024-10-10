@@ -18,7 +18,7 @@ func main() {
 			Rules: []tflint.Rule{
 				rules.NewMskModuleBackendRule(),
 				&rules.MskAppTopics{},
-				&rules.MskTopicRule{},
+				&rules.MskTopicNameRule{},
 			},
 		},
 	})

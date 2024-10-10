@@ -1,9 +1,8 @@
-# msk_topic
+# msk_topic_name
 
 ## Requirements
 
-An MSK topic must:
-- have the topic name prefixed with the team name
+An MSK topic must have the name prefixed with the team name
 
 ## Example
 

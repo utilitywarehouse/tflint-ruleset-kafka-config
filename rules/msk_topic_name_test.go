@@ -10,7 +10,7 @@ import (
 )
 
 func Test_MskTopics(t *testing.T) {
-	rule := &MskTopicRule{}
+	rule := &MskTopicNameRule{}
 
 	for _, tc := range []struct {
 		name     string

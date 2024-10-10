@@ -11,28 +11,28 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// MskTopicRule checks whether a topic defined in MSK follows the best practices.
-type MskTopicRule struct {
+// MskTopicNameRule checks whether a topic defined in MSK has the allowed team prefix.
+type MskTopicNameRule struct {
 	tflint.DefaultRule
 }
 
-func (r *MskTopicRule) Name() string {
-	return "msk_topic"
+func (r *MskTopicNameRule) Name() string {
+	return "msk_topic_name"
 }
 
-func (r *MskTopicRule) Enabled() bool {
+func (r *MskTopicNameRule) Enabled() bool {
 	return true
 }
 
-func (r *MskTopicRule) Link() string {
+func (r *MskTopicNameRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskTopicRule) Severity() tflint.Severity {
+func (r *MskTopicNameRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-func (r *MskTopicRule) Check(runner tflint.Runner) error {
+func (r *MskTopicNameRule) Check(runner tflint.Runner) error {
 	path, err := runner.GetModulePath()
 	if err != nil {
 		return fmt.Errorf("getting module path: %w", err)
@@ -68,7 +68,7 @@ func (r *MskTopicRule) Check(runner tflint.Runner) error {
 	return nil
 }
 
-func (r *MskTopicRule) validateTopic(runner tflint.Runner, topic *hclext.Block, teamName string) error {
+func (r *MskTopicNameRule) validateTopic(runner tflint.Runner, topic *hclext.Block, teamName string) error {
 	resourceName := topic.Labels[1]
 	nameAttr := topic.Body.Attributes["name"]
 
