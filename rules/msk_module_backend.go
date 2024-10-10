@@ -105,7 +105,10 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 	return r.checkBackendKeyFormat(runner, backend, *modInfo)
 }
 
-func (r *MskModuleBackendRule) validateBackendDef(runner tflint.Runner, content *hclext.BodyContent) (*hclext.Block, error) {
+func (r *MskModuleBackendRule) validateBackendDef(
+	runner tflint.Runner,
+	content *hclext.BodyContent,
+) (*hclext.Block, error) {
 	backend := findBackendDef(content)
 	if backend == nil {
 		err := runner.EmitIssue(r, "an s3 backend should be configured for a kafka MSK module", hcl.Range{})
@@ -144,10 +147,18 @@ type moduleInfo struct {
 	mskCluster string
 }
 
-func (r *MskModuleBackendRule) checkBackendBucketFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
+func (r *MskModuleBackendRule) checkBackendBucketFormat(
+	runner tflint.Runner,
+	backend *hclext.Block,
+	mi moduleInfo,
+) error {
 	bucketAttr, bucketExists := backend.Body.Attributes["bucket"]
 	if !bucketExists {
-		err := runner.EmitIssue(r, "the s3 backend should specify the bucket inside the kafka MSK module", backend.DefRange)
+		err := runner.EmitIssue(
+			r,
+			"the s3 backend should specify the bucket inside the kafka MSK module",
+			backend.DefRange,
+		)
 		if err != nil {
 			return fmt.Errorf("emitting issue: no s3 bucket: %w", err)
 		}
@@ -169,7 +180,11 @@ func (r *MskModuleBackendRule) checkBackendBucketFormat(runner tflint.Runner, ba
 	if !strings.Contains(bucket, envParts[0]) {
 		err := runner.EmitIssue(
 			r,
-			fmt.Sprintf("backend bucket doesn't contain the env of the module. Current value '%s' should contain env '%s'", bucket, envParts[0]),
+			fmt.Sprintf(
+				"backend bucket doesn't contain the env of the module. Current value '%s' should contain env '%s'",
+				bucket,
+				envParts[0],
+			),
 			bucketAttr.Range,
 		)
 		if err != nil {
@@ -182,7 +197,11 @@ func (r *MskModuleBackendRule) checkBackendBucketFormat(runner tflint.Runner, ba
 func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
 	keyAttr, keyExists := backend.Body.Attributes["key"]
 	if !keyExists {
-		err := runner.EmitIssue(r, "the s3 backend should specify the key inside the kafka MSK module", backend.DefRange)
+		err := runner.EmitIssue(
+			r,
+			"the s3 backend should specify the key inside the kafka MSK module",
+			backend.DefRange,
+		)
 		if err != nil {
 			return fmt.Errorf("emitting issue: no s3 key: %w", err)
 		}
@@ -200,7 +219,11 @@ func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backe
 	if key != expectedKey {
 		err := runner.EmitIssue(
 			r,
-			fmt.Sprintf("backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: '%s', current: '%s'", expectedKey, key),
+			fmt.Sprintf(
+				"backend key must have the following format: ${env}-${platform}/${msk-cluster}-${team-name}. Expected: '%s', current: '%s'",
+				expectedKey,
+				key,
+			),
 			keyAttr.Range,
 		)
 		if err != nil {
@@ -221,7 +244,10 @@ func (r *MskModuleBackendRule) parseModuleInfo(runner tflint.Runner, backend *hc
 	if len(pathElems) < 3 {
 		err := runner.EmitIssue(
 			r,
-			fmt.Sprintf("the module doesn't have the expected structure: the path should end with '${env}-${platform}/${msk-cluster}/${team-name}', but it is: %s", modulePath),
+			fmt.Sprintf(
+				"the module doesn't have the expected structure: the path should end with '${env}-${platform}/${msk-cluster}/${team-name}', but it is: %s",
+				modulePath,
+			),
 			backend.DefRange,
 		)
 		if err != nil {

@@ -14,3 +14,8 @@ repos:
     -   id: check-yaml
         args: [--allow-multiple-documents]
     -   id: end-of-file-fixer
+-   repo: https://github.com/segmentio/golines
+    rev: v0.12.2
+    hooks:
+      - id: golines
+        args: ["--max-len", "120"]
