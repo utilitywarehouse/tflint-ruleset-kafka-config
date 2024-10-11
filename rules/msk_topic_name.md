@@ -22,14 +22,14 @@ rule "msk_topic_name" {
 
 ### Good example
 
-Good for team `pubsub` :
+Good examples for team `pubsub` that has configured also the alias `alias_pubsub1`:
 ```hcl
-resource "kafka_topic" "good_topic1" {
-	name = "pubsub.good-topic"
+resource "kafka_topic" "good_topic_with_team_name_prefix" {
+  name = "pubsub.good-topic"
 }
 
-resource "kafka_topic" "good_topic2" {
-	name = "alias_pubsub1.good-topic"
+resource "kafka_topic" "good_topic_with_alias_prefix" {
+  name = "alias_pubsub1.good-topic"
 }
 ```
 

@@ -61,7 +61,7 @@ resource "kafka_topic" "wrong_topic" {
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "topic name must be prefixed with the team name 'pubsub' or one of its aliases 'alias_pubsub1,alias_pubsub2'. Current value is 'name-without-prefix'",
+					Message: "topic name must be prefixed with the team name 'pubsub' or one of its aliases 'alias_pubsub1, alias_pubsub2'. Current value is 'name-without-prefix'",
 					Range: hcl.Range{
 						Filename: "topics.tf",
 						Start:    hcl.Pos{Line: 3, Column: 2},
@@ -82,10 +82,10 @@ rule "msk_topic_name" {
   }
 }`,
 				"topics.tf": `
-resource "kafka_topic" "good_topic1" {
+resource "kafka_topic" "good_topic_from_alias_1" {
 	name = "alias_pubsub1.good-topic"
 }
-resource "kafka_topic" "good_topic2" {
+resource "kafka_topic" "good_topic_from_alias_2" {
 	name = "alias_pubsub2.good-topic"
 }
 `,

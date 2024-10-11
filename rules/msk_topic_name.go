@@ -105,7 +105,7 @@ func (r *MskTopicNameRule) validateTopicName(
 		im = fmt.Sprintf(
 			"topic name must be prefixed with the team name '%s' or one of its aliases '%s'. Current value is '%s'",
 			teamName,
-			strings.Join(teamAliases, ","),
+			strings.Join(teamAliases, ", "),
 			topicName,
 		)
 	} else {
