@@ -87,7 +87,18 @@ func (r *MskTopicNameRule) validateTopicName(
 	aliases map[string][]string,
 ) error {
 	resourceName := topic.Labels[1]
-	nameAttr := topic.Body.Attributes["name"]
+	nameAttr, hasName := topic.Body.Attributes["name"]
+	if !hasName {
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf("topic resource '%s' must have the name defined", resourceName),
+			topic.DefRange,
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: no name: %w", err)
+		}
+		return nil
+	}
 
 	var topicName string
 	diags := gohcl.DecodeExpression(nameAttr.Expr, nil, &topicName)

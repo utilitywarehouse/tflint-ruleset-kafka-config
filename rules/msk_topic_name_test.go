@@ -19,6 +19,27 @@ func Test_MskTopics(t *testing.T) {
 		expected helper.Issues
 	}{
 		{
+			name:    "topic doesn't have a name",
+			workDir: filepath.Join("kafka-cluster-config", "dev-aws", "kafka-shared-msk", "pubsub"),
+			files: map[string]string{
+				"topics.tf": `
+resource "kafka_topic" "topic_without_name" {
+}
+`,
+			},
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "topic resource 'topic_without_name' must have the name defined",
+					Range: hcl.Range{
+						Filename: "topics.tf",
+						Start:    hcl.Pos{Line: 2, Column: 1},
+						End:      hcl.Pos{Line: 2, Column: 44},
+					},
+				},
+			},
+		},
+		{
 			name:    "topic doesn't contain the team prefix",
 			workDir: filepath.Join("kafka-cluster-config", "dev-aws", "kafka-shared-msk", "pubsub"),
 			files: map[string]string{

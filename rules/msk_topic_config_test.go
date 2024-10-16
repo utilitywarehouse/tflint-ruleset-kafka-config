@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
@@ -19,14 +20,14 @@ func Test_MskTopicConfigRule(t *testing.T) {
 		expected helper.Issues
 	}{
 		{
-			name: "missing name",
+			name: "topic without name",
 			input: `
 resource "kafka_topic" "topic_without_name" {
 }`,
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "topic resource 'topic_without_name' must have the name defined",
+					Message: "missing replication_factor: it must be equal to '3'",
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 2, Column: 1},
@@ -91,6 +92,8 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
 
 			if tc.fixed != "" {
 				helper.AssertChanges(t, map[string]string{fileName: tc.fixed}, runner.Changes())
+			} else {
+				assert.Empty(t, runner.Changes())
 			}
 		})
 	}

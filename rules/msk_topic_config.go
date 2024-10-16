@@ -76,22 +76,7 @@ func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
 }
 
 func (r *MskTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hclext.Block) error {
-	resourceName := topic.Labels[1]
-
-	nameAttr, hasName := topic.Body.Attributes["name"]
-	if !hasName {
-		err := runner.EmitIssue(
-			r,
-			fmt.Sprintf("topic resource '%s' must have the name defined", resourceName),
-			topic.DefRange,
-		)
-		if err != nil {
-			return fmt.Errorf("emitting issue: no name: %w", err)
-		}
-		return nil
-	}
-
-	if err := r.validateReplicationFactor(runner, topic, nameAttr); err != nil {
+	if err := r.validateReplicationFactor(runner, topic); err != nil {
 		return err
 	}
 
@@ -105,13 +90,23 @@ const (
 
 var replFactorFix = fmt.Sprintf("%s = %d", replFactorAttrName, replicationFactorVal)
 
-func (r *MskTopicConfigRule) validateReplicationFactor(
-	runner tflint.Runner,
-	topic *hclext.Block,
-	nameAttr *hclext.Attribute,
-) error {
+func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
 	replFactorAttr, hasReplFactor := topic.Body.Attributes[replFactorAttrName]
 	if !hasReplFactor {
+		nameAttr, hasName := topic.Body.Attributes["name"]
+		if !hasName {
+			/*	when no name attribute, we don't issue a fix, as we can insert the replication factor after it */
+			err := runner.EmitIssue(
+				r,
+				fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
+				topic.DefRange,
+			)
+			if err != nil {
+				return fmt.Errorf("emitting issue without fix: no replication factor: %w", err)
+			}
+			return nil
+		}
+
 		err := runner.EmitIssueWithFix(
 			r,
 			fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
@@ -121,7 +116,7 @@ func (r *MskTopicConfigRule) validateReplicationFactor(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: no replication factor: %w", err)
+			return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
 		}
 		return nil
 	}
