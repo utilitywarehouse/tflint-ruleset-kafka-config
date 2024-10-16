@@ -19,6 +19,24 @@ func Test_MskTopicConfigRule(t *testing.T) {
 		expected helper.Issues
 	}{
 		{
+			name: "missing name",
+			input: `
+resource "kafka_topic" "topic_without_name" {
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "topic resource 'topic_without_name' must have the name defined",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 2, Column: 1},
+						End:      hcl.Pos{Line: 2, Column: 44},
+					},
+				},
+			},
+		},
+
+		{
 			name: "missing replication factor",
 			input: `
 resource "kafka_topic" "topic_without_repl_factor" {

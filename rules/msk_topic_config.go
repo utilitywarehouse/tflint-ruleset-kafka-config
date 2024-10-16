@@ -40,23 +40,6 @@ func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
 		return nil
 	}
 
-	/*
-		resource "kafka_topic" "proximo_example" {
-		  name               = "pubsub.proximo-example"
-		  replication_factor = 3
-		  partitions         = 3
-		  config = {
-		    # retain 100MB on each partition
-		    "retention.bytes" = "104857600"
-		    # keep data for 2 days
-		    "retention.ms" = "172800000"
-		    # allow max 1 MB for a message
-		    "max.message.bytes" = "1048576"
-		    "compression.type"  = "zstd"
-		    "cleanup.policy"    = "delete"
-		  }
-		}
-	*/
 	resourceContents, err := runner.GetResourceContent(
 		"kafka_topic",
 		&hclext.BodySchema{
@@ -93,9 +76,21 @@ func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
 }
 
 func (r *MskTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hclext.Block) error {
-	// resourceName := topic.Labels[1]
+	resourceName := topic.Labels[1]
 
-	nameAttr := topic.Body.Attributes["name"]
+	nameAttr, hasName := topic.Body.Attributes["name"]
+	if !hasName {
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf("topic resource '%s' must have the name defined", resourceName),
+			topic.DefRange,
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: no name: %w", err)
+		}
+		return nil
+	}
+
 	if err := r.validateReplicationFactor(runner, topic, nameAttr); err != nil {
 		return err
 	}
