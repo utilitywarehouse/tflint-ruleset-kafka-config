@@ -64,3 +64,46 @@ instructions](https://pre-commit.com/#install) then install the hooks:
 $ pre-commit install
 $ pre-commit run --all-hooks
 ```
+
+## Debugging
+
+If you're developing some rules and want to see how they run on some actual
+Terraform code you will need to.
+
+1.  Install your changes: `make install`
+
+2.  Enable the plugin in the repo, if the plugin is already installed, be sure
+    to remove references to source and version (other wise it will install from
+    there):
+    
+    ``` hcl
+    plugin "uw-kafka-config" {
+      enabled = true
+    
+      # comment this out if it exists, ensure we use the plugin
+      # we just installed, and not building from upstream source
+      #version = "1.1.0"
+      #source  = "github.com/utilitywarehouse/tflint-ruleset-kafka-config"
+    }
+    ```
+
+3.  Run the plugin
+
+The plugin expects to be run from the directory containing the files you want
+you'll need to change directory first and make sure you pass the :
+
+``` 
+$ cd ./path/to/debug
+$ tflint --config=$(git rev-parse --show-toplevel)/.tflint.hcl
+```
+
+To view more logs you can set set the [`TFLINT_DEBUG` environment
+variable](https://github.com/terraform-linters/tflint/blob/fc6795ce12fde842fc73f67e55369a63bdfc27d8/README.md#debugging),
+combining all in one line:
+
+    cd ./path/to/debug && TFLINT_LOG=debug tflint --config=$(git rev-parse --show-toplevel)/.tflint-msk.hcl ; cd -
+
+Similarly if you want to debug the plugin via a `pre-commit` hook (assuming the
+hook has name `terraform_tflint_msk`):
+
+    TFLINT_LOG=debug pre-commit run --verbose --files ./path/to/debug/*.tf -- terraform_tflint_msk
