@@ -94,32 +94,7 @@ var replFactorFix = fmt.Sprintf("%s = %d", replFactorAttrName, replicationFactor
 func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
 	replFactorAttr, hasReplFactor := topic.Body.Attributes[replFactorAttrName]
 	if !hasReplFactor {
-		nameAttr, hasName := topic.Body.Attributes["name"]
-		if !hasName {
-			/*	when no name attribute, we can not issue a fix, as we insert the replication factor after the name */
-			err := runner.EmitIssue(
-				r,
-				fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
-				topic.DefRange,
-			)
-			if err != nil {
-				return fmt.Errorf("emitting issue without fix: no replication factor: %w", err)
-			}
-			return nil
-		}
-
-		err := runner.EmitIssueWithFix(
-			r,
-			fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
-			topic.DefRange,
-			func(f tflint.Fixer) error {
-				return f.InsertTextAfter(nameAttr.Range, "\n"+replFactorFix)
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
-		}
-		return nil
+		return r.reportMissingReplicationFactor(runner, topic)
 	}
 
 	var replFactor int
@@ -140,6 +115,35 @@ func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, top
 		if err != nil {
 			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
 		}
+	}
+	return nil
+}
+
+func (r *MskTopicConfigRule) reportMissingReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
+	nameAttr, hasName := topic.Body.Attributes["name"]
+	if !hasName {
+		/*	when no name attribute, we can not issue a fix, as we insert the replication factor after the name */
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
+			topic.DefRange,
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue without fix: no replication factor: %w", err)
+		}
+		return nil
+	}
+
+	err := runner.EmitIssueWithFix(
+		r,
+		fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
+		topic.DefRange,
+		func(f tflint.Fixer) error {
+			return f.InsertTextAfter(nameAttr.Range, "\n"+replFactorFix)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
 	}
 	return nil
 }
