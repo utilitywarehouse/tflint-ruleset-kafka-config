@@ -96,7 +96,7 @@ func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, top
 	if !hasReplFactor {
 		nameAttr, hasName := topic.Body.Attributes["name"]
 		if !hasName {
-			/*	when no name attribute, we don't issue a fix, as we can insert the replication factor after it */
+			/*	when no name attribute, we can not issue a fix, as we insert the replication factor after the name */
 			err := runner.EmitIssue(
 				r,
 				fmt.Sprintf("missing replication_factor: it must be equal to '%d'", replicationFactorVal),
