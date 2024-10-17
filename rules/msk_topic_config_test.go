@@ -31,7 +31,7 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 2, Column: 1},
-						End:      hcl.Pos{Line: 2, Column: 44},
+						End:      hcl.Pos{Line: 2, Column: 60},
 					},
 				},
 			},
