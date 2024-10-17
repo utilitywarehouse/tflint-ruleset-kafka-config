@@ -19,6 +19,7 @@ func main() {
 				rules.NewMskModuleBackendRule(),
 				&rules.MskAppTopics{},
 				&rules.MskTopicNameRule{},
+				&rules.MskTopicConfigRule{},
 			},
 		},
 	})
