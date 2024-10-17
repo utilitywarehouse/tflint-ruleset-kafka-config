@@ -84,7 +84,8 @@ func (r *MskTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 }
 
 const (
-	replFactorAttrName   = "replication_factor"
+	replFactorAttrName = "replication_factor"
+	// See [https://github.com/utilitywarehouse/tflint-ruleset-kafka-config/blob/main/rules/msk_topic_config.md#requirements] for explanation.
 	replicationFactorVal = 3
 )
 
