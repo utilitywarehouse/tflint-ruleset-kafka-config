@@ -20,9 +20,9 @@ func Test_MskTopicConfigRule(t *testing.T) {
 		expected helper.Issues
 	}{
 		{
-			name: "topic without name",
+			name: "missing replication factor and topic name not defined",
 			input: `
-resource "kafka_topic" "topic_without_name" {
+resource "kafka_topic" "topic_without_repl_factor_and_name" {
 }`,
 			expected: []*helper.Issue{
 				{
