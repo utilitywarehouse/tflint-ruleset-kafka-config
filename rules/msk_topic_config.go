@@ -127,7 +127,7 @@ func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, top
 		return diags
 	}
 
-	if replFactor != 3 {
+	if replFactor != replicationFactorVal {
 		err := runner.EmitIssueWithFix(
 			r,
 			fmt.Sprintf("the replication_factor must be equal to '%d'", replicationFactorVal),
