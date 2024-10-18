@@ -23,6 +23,9 @@ func Test_MskTopicConfigRule(t *testing.T) {
 			name: "missing replication factor and topic name not defined",
 			input: `
 resource "kafka_topic" "topic_without_repl_factor_and_name" {
+  config = {
+    "compression.type" = "zstd"
+  }
 }`,
 			expected: []*helper.Issue{
 				{
@@ -42,11 +45,17 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
 			input: `
 resource "kafka_topic" "topic_without_repl_factor" {
   name = "topic_without_repl_factor"
+  config = {
+    "compression.type" = "zstd"
+  }
 }`,
 			fixed: `
 resource "kafka_topic" "topic_without_repl_factor" {
   name               = "topic_without_repl_factor"
   replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
 }`,
 			expected: []*helper.Issue{
 				{
@@ -66,11 +75,17 @@ resource "kafka_topic" "topic_without_repl_factor" {
 resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   name               = "topic_with_incorrect_repl_factor"
   replication_factor = 10
+  config = {
+    "compression.type" = "zstd"
+  }
 }`,
 			fixed: `
 resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   name               = "topic_with_incorrect_repl_factor"
   replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
 }`,
 			expected: []*helper.Issue{
 				{
@@ -84,6 +99,84 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
 				},
 			},
 		},
+		{
+			name: "missing config attribute",
+			input: `
+resource "kafka_topic" "topic_without_config" {
+  name = "topic_without_config"
+  replication_factor = 3
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "missing config attribute: the topic configuration must be specified in a config attribute",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 2, Column: 1},
+						End:      hcl.Pos{Line: 2, Column: 46},
+					},
+				},
+			},
+		},
+		{
+			name: "missing compression type",
+			input: `
+resource "kafka_topic" "topic_without_compression_type" {
+  name               = "topic_without_compression_type"
+  replication_factor = 3
+  config = {
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_without_compression_type" {
+  name               = "topic_without_compression_type"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "missing compression.type: it must be equal to 'zstd'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 6, Column: 4},
+					},
+				},
+			},
+		},
+		{
+			name: "wrong compression type",
+			input: `
+resource "kafka_topic" "topic_with_wrong_compression_type" {
+  name               = "topic_with_wrong_compression_type"
+  replication_factor = 3
+  config = {
+    "compression.type" = "gzip"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_wrong_compression_type" {
+  name               = "topic_with_wrong_compression_type"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "the compression.type value must be equal to 'zstd'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 6, Column: 5},
+						End:      hcl.Pos{Line: 6, Column: 23},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
@@ -91,6 +184,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
 			helper.AssertIssues(t, tc.expected, runner.Issues)
 
 			if tc.fixed != "" {
+				t.Logf("Proposed changes: %s", string(runner.Changes()[fileName]))
 				helper.AssertChanges(t, map[string]string{fileName: tc.fixed}, runner.Changes())
 			} else {
 				assert.Empty(t, runner.Changes())

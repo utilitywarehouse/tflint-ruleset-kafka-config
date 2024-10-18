@@ -3,7 +3,9 @@ package rules
 import (
 	"fmt"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/logger"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
@@ -45,19 +47,8 @@ func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
 		&hclext.BodySchema{
 			Attributes: []hclext.AttributeSchema{
 				{Name: "name"},
-				{Name: "replication_factor"},
-			},
-			Blocks: []hclext.BlockSchema{
-				{
-					Type: "config",
-					Body: &hclext.BodySchema{
-						Attributes: []hclext.AttributeSchema{
-							{Name: "retention.ms"},
-							{Name: "compression.type"},
-							{Name: "cleanup.policy"},
-						},
-					},
-				},
+				{Name: replFactorAttrName},
+				{Name: "config"},
 			},
 		},
 		nil,
@@ -80,6 +71,22 @@ func (r *MskTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
+	configAttr, hasConfig := topic.Body.Attributes["config"]
+	if !hasConfig {
+		err := runner.EmitIssue(
+			r,
+			"missing config attribute: the topic configuration must be specified in a config attribute",
+			topic.DefRange,
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: missing config block: %w", err)
+		}
+		return nil
+	}
+
+	if err := r.validateCompressionType(runner, configAttr); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -146,4 +153,75 @@ func (r *MskTopicConfigRule) reportMissingReplicationFactor(runner tflint.Runner
 		return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
 	}
 	return nil
+}
+
+const (
+	compressionTypeKey = "compression.type"
+	compressionTypeVal = `zstd`
+)
+
+var compressionTypeFix = fmt.Sprintf(`"%s" = "%s"`, compressionTypeKey, compressionTypeVal)
+
+func (r *MskTopicConfigRule) validateCompressionType(runner tflint.Runner, config *hclext.Attribute) error {
+	var configValue map[string]string
+	diags := gohcl.DecodeExpression(config.Expr, nil, &configValue)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	compressionType, hasCompressionType := configValue[compressionTypeKey]
+	if !hasCompressionType {
+		err := runner.EmitIssueWithFix(
+			r,
+			fmt.Sprintf("missing compression.type: it must be equal to '%s'", compressionTypeVal),
+			config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+compressionTypeFix)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
+		}
+		return nil
+	}
+
+	configExpr, ok := config.Expr.(*hclsyntax.ObjectConsExpr)
+	if !ok {
+		return fmt.Errorf("could not convert 'config' of type %T to hclsyntax.ObjectConsExpr", configExpr)
+	}
+
+	if compressionType != compressionTypeVal {
+		ctPair, err := r.findPair(configExpr, compressionTypeKey)
+		if err != nil {
+			return err
+		}
+
+		err = runner.EmitIssueWithFix(
+			r,
+			fmt.Sprintf("the compression.type value must be equal to '%s'", compressionTypeVal),
+			ctPair.Key.Range(),
+			func(f tflint.Fixer) error {
+				return f.ReplaceText(ctPair.Value.Range(), `"`+compressionTypeVal+`"`)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
+		}
+		return nil
+	}
+	return nil
+}
+
+func (r *MskTopicConfigRule) findPair(configExpr *hclsyntax.ObjectConsExpr, key string) (*hcl.KeyValuePair, error) {
+	for _, pair := range configExpr.ExprMap() {
+		var pk string
+		diags := gohcl.DecodeExpression(pair.Key, nil, &pk)
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		if pk == key {
+			return &pair, nil
+		}
+	}
+	return nil, nil
 }
