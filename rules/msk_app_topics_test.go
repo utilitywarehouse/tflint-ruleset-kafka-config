@@ -8,8 +8,8 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-func Test_MskAppTopics(t *testing.T) {
-	rule := &MskAppTopics{}
+func Test_MSKAppTopics(t *testing.T) {
+	rule := &MSKAppTopics{}
 
 	for _, tc := range []struct {
 		name     string

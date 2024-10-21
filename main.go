@@ -16,10 +16,10 @@ func main() {
 			Name:    "uw-kafka-config",
 			Version: version,
 			Rules: []tflint.Rule{
-				rules.NewMskModuleBackendRule(),
-				&rules.MskAppTopics{},
-				&rules.MskTopicNameRule{},
-				&rules.MskTopicConfigRule{},
+				rules.NewMSKModuleBackendRule(),
+				&rules.MSKAppTopics{},
+				&rules.MSKTopicNameRule{},
+				&rules.MSKTopicConfigRule{},
 			},
 		},
 	})
