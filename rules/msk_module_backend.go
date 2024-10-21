@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/terraform-linters/tflint-plugin-sdk/logger"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
@@ -69,12 +70,12 @@ func (r *MskModuleBackendRule) getBackendContent(runner tflint.Runner) (*hclext.
 }
 
 func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
+	isRoot, err := isRootModule(runner)
 	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
+		return err
 	}
-	if !path.IsRoot() {
-		// This rule does not evaluate child modules.
+	if !isRoot {
+		logger.Debug("skipping child module")
 		return nil
 	}
 

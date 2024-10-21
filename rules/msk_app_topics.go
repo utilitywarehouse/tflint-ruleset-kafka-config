@@ -34,11 +34,11 @@ func (r *MskAppTopics) Severity() tflint.Severity {
 }
 
 func (r *MskAppTopics) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
+	isRoot, err := isRootModule(runner)
 	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
+		return err
 	}
-	if !path.IsRoot() {
+	if !isRoot {
 		logger.Debug("skipping child module")
 		return nil
 	}
