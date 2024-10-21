@@ -9,8 +9,8 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-func Test_MskModuleBackend(t *testing.T) {
-	rule := NewMskModuleBackendRule()
+func Test_MSKModuleBackend(t *testing.T) {
+	rule := NewMSKModuleBackendRule()
 
 	defaultWorkDir := filepath.Join("kafka-cluster-config", "dev-aws", "kafka-shared-msk", "pubsub")
 

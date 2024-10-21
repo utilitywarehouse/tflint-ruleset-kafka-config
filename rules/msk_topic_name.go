@@ -15,28 +15,28 @@ type mskTopicNameRuleConfig struct {
 	TeamAliases map[string][]string `hclext:"team_aliases,optional"`
 }
 
-// MskTopicNameRule checks whether a topic defined in MSK has an allowed team prefix.
-type MskTopicNameRule struct {
+// MSKTopicNameRule checks whether a topic defined in MSK has an allowed team prefix.
+type MSKTopicNameRule struct {
 	tflint.DefaultRule
 }
 
-func (r *MskTopicNameRule) Name() string {
+func (r *MSKTopicNameRule) Name() string {
 	return "msk_topic_name"
 }
 
-func (r *MskTopicNameRule) Enabled() bool {
+func (r *MSKTopicNameRule) Enabled() bool {
 	return true
 }
 
-func (r *MskTopicNameRule) Link() string {
+func (r *MSKTopicNameRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskTopicNameRule) Severity() tflint.Severity {
+func (r *MSKTopicNameRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-func (r *MskTopicNameRule) Check(runner tflint.Runner) error {
+func (r *MSKTopicNameRule) Check(runner tflint.Runner) error {
 	isRoot, err := isRootModule(runner)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (r *MskTopicNameRule) Check(runner tflint.Runner) error {
 	return nil
 }
 
-func (r *MskTopicNameRule) validateTopicName(
+func (r *MSKTopicNameRule) validateTopicName(
 	runner tflint.Runner,
 	topic *hclext.Block,
 	teamName string,

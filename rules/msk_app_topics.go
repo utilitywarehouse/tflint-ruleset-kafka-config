@@ -11,29 +11,29 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// MskAppTopics checks whether an MSK module only consumes from topics
+// MSKAppTopics checks whether an MSK module only consumes from topics
 // defined in the module.
-type MskAppTopics struct {
+type MSKAppTopics struct {
 	tflint.DefaultRule
 }
 
-func (r *MskAppTopics) Name() string {
+func (r *MSKAppTopics) Name() string {
 	return "msk_app_topics"
 }
 
-func (r *MskAppTopics) Enabled() bool {
+func (r *MSKAppTopics) Enabled() bool {
 	return true
 }
 
-func (r *MskAppTopics) Link() string {
+func (r *MSKAppTopics) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskAppTopics) Severity() tflint.Severity {
+func (r *MSKAppTopics) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-func (r *MskAppTopics) Check(runner tflint.Runner) error {
+func (r *MSKAppTopics) Check(runner tflint.Runner) error {
 	isRoot, err := isRootModule(runner)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func buildTopicNameContext(topicNameMap map[string]string) *hcl.EvalContext {
 	}
 }
 
-func (r *MskAppTopics) reportExternalTopics(
+func (r *MSKAppTopics) reportExternalTopics(
 	runner tflint.Runner,
 	attrName string,
 	block *hclext.Block,

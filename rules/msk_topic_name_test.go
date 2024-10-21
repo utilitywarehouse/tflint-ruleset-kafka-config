@@ -9,8 +9,8 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-func Test_MskTopics(t *testing.T) {
-	rule := &MskTopicNameRule{}
+func Test_MSKTopics(t *testing.T) {
+	rule := &MSKTopicNameRule{}
 
 	for _, tc := range []struct {
 		name     string
