@@ -186,7 +186,7 @@ const (
 
 var compressionTypeFix = fmt.Sprintf(`"%s" = "%s"`, compressionTypeKey, compressionTypeVal)
 
-func (r *MskTopicConfigRule) validateCompressionType(
+func (r *MSKTopicConfigRule) validateCompressionType(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configPairMap map[string]hcl.KeyValuePair,
