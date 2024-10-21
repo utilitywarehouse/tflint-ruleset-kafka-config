@@ -17,7 +17,7 @@ func main() {
 			Version: version,
 			Rules: []tflint.Rule{
 				&rules.MSKModuleBackendRule{},
-				&rules.MSKAppTopics{},
+				&rules.MSKAppTopicsRule{},
 				&rules.MSKTopicNameRule{},
 				&rules.MSKTopicConfigRule{},
 			},
