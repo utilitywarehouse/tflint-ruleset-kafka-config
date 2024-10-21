@@ -19,11 +19,6 @@ type MSKModuleBackendRule struct {
 	tflint.DefaultRule
 }
 
-// NewMSKModuleBackendRule returns a new rule.
-func NewMSKModuleBackendRule() *MSKModuleBackendRule {
-	return &MSKModuleBackendRule{}
-}
-
 // Name returns the rule name.
 func (r *MSKModuleBackendRule) Name() string {
 	return "msk_module_backend"

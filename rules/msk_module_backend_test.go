@@ -10,7 +10,7 @@ import (
 )
 
 func Test_MSKModuleBackend(t *testing.T) {
-	rule := NewMSKModuleBackendRule()
+	rule := &MSKModuleBackendRule{}
 
 	defaultWorkDir := filepath.Join("kafka-cluster-config", "dev-aws", "kafka-shared-msk", "pubsub")
 

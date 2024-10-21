@@ -16,7 +16,7 @@ func main() {
 			Name:    "uw-kafka-config",
 			Version: version,
 			Rules: []tflint.Rule{
-				rules.NewMSKModuleBackendRule(),
+				&rules.MSKModuleBackendRule{},
 				&rules.MSKAppTopics{},
 				&rules.MSKTopicNameRule{},
 				&rules.MSKTopicConfigRule{},
