@@ -11,34 +11,34 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// MskAppTopics checks whether an MSK module only consumes from topics
+// MSKAppTopicsRule checks whether an MSK module only consumes from topics
 // defined in the module.
-type MskAppTopics struct {
+type MSKAppTopicsRule struct {
 	tflint.DefaultRule
 }
 
-func (r *MskAppTopics) Name() string {
+func (r *MSKAppTopicsRule) Name() string {
 	return "msk_app_topics"
 }
 
-func (r *MskAppTopics) Enabled() bool {
+func (r *MSKAppTopicsRule) Enabled() bool {
 	return true
 }
 
-func (r *MskAppTopics) Link() string {
+func (r *MSKAppTopicsRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskAppTopics) Severity() tflint.Severity {
+func (r *MSKAppTopicsRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-func (r *MskAppTopics) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
+func (r *MSKAppTopicsRule) Check(runner tflint.Runner) error {
+	isRoot, err := isRootModule(runner)
 	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
+		return err
 	}
-	if !path.IsRoot() {
+	if !isRoot {
 		logger.Debug("skipping child module")
 		return nil
 	}
@@ -135,7 +135,7 @@ func buildTopicNameContext(topicNameMap map[string]string) *hcl.EvalContext {
 	}
 }
 
-func (r *MskAppTopics) reportExternalTopics(
+func (r *MSKAppTopicsRule) reportExternalTopics(
 	runner tflint.Runner,
 	attrName string,
 	block *hclext.Block,

@@ -9,8 +9,8 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-func Test_MskTopicConfigRule(t *testing.T) {
-	rule := &MskTopicConfigRule{}
+func Test_MSKTopicConfigRule(t *testing.T) {
+	rule := &MSKTopicConfigRule{}
 
 	const fileName = "topics.tf"
 	for _, tc := range []struct {

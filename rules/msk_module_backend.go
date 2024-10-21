@@ -8,42 +8,38 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/terraform-linters/tflint-plugin-sdk/logger"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// MskModuleBackendRule checks whether an MSK module has an S3 backend defined with the following restrictions:
+// MSKModuleBackendRule checks whether an MSK module has an S3 backend defined with the following restrictions:
 //   - the key is in the format ${env}-${platform}/${msk-cluster}-${team-name}
 //   - the bucket contains the environment in its name
-type MskModuleBackendRule struct {
+type MSKModuleBackendRule struct {
 	tflint.DefaultRule
 }
 
-// NewMskModuleBackendRule returns a new rule.
-func NewMskModuleBackendRule() *MskModuleBackendRule {
-	return &MskModuleBackendRule{}
-}
-
 // Name returns the rule name.
-func (r *MskModuleBackendRule) Name() string {
+func (r *MSKModuleBackendRule) Name() string {
 	return "msk_module_backend"
 }
 
 // Enabled returns whether the rule is enabled by default.
-func (r *MskModuleBackendRule) Enabled() bool {
+func (r *MSKModuleBackendRule) Enabled() bool {
 	return true
 }
 
 // Severity returns the rule severity.
-func (r *MskModuleBackendRule) Severity() tflint.Severity {
+func (r *MSKModuleBackendRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
 // Link returns the rule reference link.
-func (r *MskModuleBackendRule) Link() string {
+func (r *MSKModuleBackendRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskModuleBackendRule) getBackendContent(runner tflint.Runner) (*hclext.BodyContent, error) {
+func (r *MSKModuleBackendRule) getBackendContent(runner tflint.Runner) (*hclext.BodyContent, error) {
 	//nolint:wrapcheck
 	return runner.GetModuleContent(&hclext.BodySchema{
 		Blocks: []hclext.BlockSchema{
@@ -68,13 +64,13 @@ func (r *MskModuleBackendRule) getBackendContent(runner tflint.Runner) (*hclext.
 	}, nil)
 }
 
-func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
+func (r *MSKModuleBackendRule) Check(runner tflint.Runner) error {
+	isRoot, err := isRootModule(runner)
 	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
+		return err
 	}
-	if !path.IsRoot() {
-		// This rule does not evaluate child modules.
+	if !isRoot {
+		logger.Debug("skipping child module")
 		return nil
 	}
 
@@ -105,7 +101,7 @@ func (r *MskModuleBackendRule) Check(runner tflint.Runner) error {
 	return r.checkBackendKeyFormat(runner, backend, *modInfo)
 }
 
-func (r *MskModuleBackendRule) validateBackendDef(
+func (r *MSKModuleBackendRule) validateBackendDef(
 	runner tflint.Runner,
 	content *hclext.BodyContent,
 ) (*hclext.Block, error) {
@@ -147,7 +143,7 @@ type moduleInfo struct {
 	mskCluster string
 }
 
-func (r *MskModuleBackendRule) checkBackendBucketFormat(
+func (r *MSKModuleBackendRule) checkBackendBucketFormat(
 	runner tflint.Runner,
 	backend *hclext.Block,
 	mi moduleInfo,
@@ -194,7 +190,7 @@ func (r *MskModuleBackendRule) checkBackendBucketFormat(
 	return nil
 }
 
-func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
+func (r *MSKModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backend *hclext.Block, mi moduleInfo) error {
 	keyAttr, keyExists := backend.Body.Attributes["key"]
 	if !keyExists {
 		err := runner.EmitIssue(
@@ -234,7 +230,7 @@ func (r *MskModuleBackendRule) checkBackendKeyFormat(runner tflint.Runner, backe
 	return nil
 }
 
-func (r *MskModuleBackendRule) parseModuleInfo(runner tflint.Runner, backend *hclext.Block) (*moduleInfo, error) {
+func (r *MSKModuleBackendRule) parseModuleInfo(runner tflint.Runner, backend *hclext.Block) (*moduleInfo, error) {
 	modulePath, err := runner.GetOriginalwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed getting module path: %w", err)

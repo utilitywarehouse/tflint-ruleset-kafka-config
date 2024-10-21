@@ -11,33 +11,33 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// MskTopicConfigRule checks the configuration for an MSK topic.
-type MskTopicConfigRule struct {
+// MSKTopicConfigRule checks the configuration for an MSK topic.
+type MSKTopicConfigRule struct {
 	tflint.DefaultRule
 }
 
-func (r *MskTopicConfigRule) Name() string {
+func (r *MSKTopicConfigRule) Name() string {
 	return "msk_topic_config"
 }
 
-func (r *MskTopicConfigRule) Enabled() bool {
+func (r *MSKTopicConfigRule) Enabled() bool {
 	return true
 }
 
-func (r *MskTopicConfigRule) Link() string {
+func (r *MSKTopicConfigRule) Link() string {
 	return ReferenceLink(r.Name())
 }
 
-func (r *MskTopicConfigRule) Severity() tflint.Severity {
+func (r *MSKTopicConfigRule) Severity() tflint.Severity {
 	return tflint.ERROR
 }
 
-func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
-	path, err := runner.GetModulePath()
+func (r *MSKTopicConfigRule) Check(runner tflint.Runner) error {
+	isRoot, err := isRootModule(runner)
 	if err != nil {
-		return fmt.Errorf("getting module path: %w", err)
+		return err
 	}
-	if !path.IsRoot() {
+	if !isRoot {
 		logger.Debug("skipping child module")
 		return nil
 	}
@@ -66,7 +66,7 @@ func (r *MskTopicConfigRule) Check(runner tflint.Runner) error {
 	return nil
 }
 
-func (r *MskTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hclext.Block) error {
+func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hclext.Block) error {
 	if err := r.validateReplicationFactor(runner, topic); err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ const (
 
 var replFactorFix = fmt.Sprintf("%s = %d", replFactorAttrName, replicationFactorVal)
 
-func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
+func (r *MSKTopicConfigRule) validateReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
 	replFactorAttr, hasReplFactor := topic.Body.Attributes[replFactorAttrName]
 	if !hasReplFactor {
 		return r.reportMissingReplicationFactor(runner, topic)
@@ -150,7 +150,7 @@ func (r *MskTopicConfigRule) validateReplicationFactor(runner tflint.Runner, top
 	return nil
 }
 
-func (r *MskTopicConfigRule) reportMissingReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
+func (r *MSKTopicConfigRule) reportMissingReplicationFactor(runner tflint.Runner, topic *hclext.Block) error {
 	nameAttr, hasName := topic.Body.Attributes["name"]
 	if !hasName {
 		/*	when no name attribute, we can not issue a fix, as we insert the replication factor after the name */
