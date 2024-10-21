@@ -177,6 +177,18 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
 				},
 			},
 		},
+		{
+			name: "good topic definition",
+			input: `
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
