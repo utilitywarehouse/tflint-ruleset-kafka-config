@@ -20,6 +20,7 @@ func main() {
 				&rules.MSKAppTopicsRule{},
 				&rules.MSKTopicNameRule{},
 				&rules.MSKTopicConfigRule{},
+				&rules.MSKUniqueAppNamesRule{},
 			},
 		},
 	})
