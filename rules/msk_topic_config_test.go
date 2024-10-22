@@ -180,8 +180,8 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
 					Message: "the compression.type value must be equal to 'zstd'",
 					Range: hcl.Range{
 						Filename: fileName,
-						Start:    hcl.Pos{Line: 7, Column: 5},
-						End:      hcl.Pos{Line: 7, Column: 23},
+						Start:    hcl.Pos{Line: 7, Column: 26},
+						End:      hcl.Pos{Line: 7, Column: 32},
 					},
 				},
 			},

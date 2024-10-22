@@ -223,7 +223,7 @@ func (r *MSKTopicConfigRule) validateCompressionType(
 		err := runner.EmitIssueWithFix(
 			r,
 			fmt.Sprintf("the %s value must be equal to '%s'", compressionTypeKey, compressionTypeVal),
-			ctPair.Key.Range(),
+			ctPair.Value.Range(),
 			func(f tflint.Fixer) error {
 				return f.ReplaceText(ctPair.Value.Range(), `"`+compressionTypeVal+`"`)
 			},
