@@ -96,7 +96,7 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	if err := r.ValidateCleanupPolicy(runner, configAttr, configKeyToPairMap); err != nil {
+	if err := r.validateCleanupPolicy(runner, configAttr, configKeyToPairMap); err != nil {
 		return err
 	}
 	return nil
@@ -246,7 +246,7 @@ var (
 	cleanupPolicyValidValues = []string{"delete", "compact"}
 )
 
-func (r *MSKTopicConfigRule) ValidateCleanupPolicy(
+func (r *MSKTopicConfigRule) validateCleanupPolicy(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
