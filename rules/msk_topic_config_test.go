@@ -25,6 +25,7 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 resource "kafka_topic" "topic_without_repl_factor_and_name" {
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			expected: []*helper.Issue{
@@ -47,6 +48,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   name = "topic_without_repl_factor"
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			fixed: `
@@ -55,6 +57,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			expected: []*helper.Issue{
@@ -77,6 +80,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   replication_factor = 10
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			fixed: `
@@ -85,6 +89,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			expected: []*helper.Issue{
@@ -125,6 +130,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   name               = "topic_without_compression_type"
   replication_factor = 3
   config = {
+    "cleanup.policy"   = "delete"
   }
 }`,
 			fixed: `
@@ -133,6 +139,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
+    "cleanup.policy"   = "delete"
   }
 }`,
 			expected: []*helper.Issue{
@@ -142,7 +149,7 @@ resource "kafka_topic" "topic_without_compression_type" {
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 6, Column: 4},
+						End:      hcl.Pos{Line: 7, Column: 4},
 					},
 				},
 			},
@@ -154,6 +161,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   name               = "topic_with_wrong_compression_type"
   replication_factor = 3
   config = {
+    "cleanup.policy"   = "delete"
     "compression.type" = "gzip"
   }
 }`,
@@ -162,6 +170,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   name               = "topic_with_wrong_compression_type"
   replication_factor = 3
   config = {
+    "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
   }
 }`,
@@ -171,8 +180,62 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
 					Message: "the compression.type value must be equal to 'zstd'",
 					Range: hcl.Range{
 						Filename: fileName,
-						Start:    hcl.Pos{Line: 6, Column: 5},
-						End:      hcl.Pos{Line: 6, Column: 23},
+						Start:    hcl.Pos{Line: 7, Column: 5},
+						End:      hcl.Pos{Line: 7, Column: 23},
+					},
+				},
+			},
+		},
+		{
+			name: "missing cleanup policy",
+			input: `
+resource "kafka_topic" "topic_without_cleanup_policy" {
+  name               = "topic_without_cleanup_policy"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_without_cleanup_policy" {
+  name               = "topic_without_cleanup_policy"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "missing cleanup.policy: using default 'delete'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 7, Column: 4},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid cleanup policy value",
+			input: `
+resource "kafka_topic" "topic_with_invalid_cleanup_policy" {
+  name               = "topic_with_invalid_cleanup_policy"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "invalid-value"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "invalid cleanup.policy: it must be one of [delete, compact], but currently is 'invalid-value'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 6, Column: 26},
+						End:      hcl.Pos{Line: 6, Column: 41},
 					},
 				},
 			},
@@ -184,6 +247,7 @@ resource "kafka_topic" "good topic" {
   name               = "good_topic"
   replication_factor = 3
   config = {
+    "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
   }
 }`,

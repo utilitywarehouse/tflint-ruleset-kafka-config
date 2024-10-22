@@ -2,6 +2,8 @@ package rules
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -91,6 +93,10 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 	}
 
 	if err := r.validateCompressionType(runner, configAttr, configKeyToPairMap); err != nil {
+		return err
+	}
+
+	if err := r.ValidateCleanupPolicy(runner, configAttr, configKeyToPairMap); err != nil {
 		return err
 	}
 	return nil
@@ -202,7 +208,7 @@ func (r *MSKTopicConfigRule) validateCompressionType(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue with fix: no replication factor: %w", err)
+			return fmt.Errorf("emitting issue with fix: no compression type: %w", err)
 		}
 		return nil
 	}
@@ -224,6 +230,61 @@ func (r *MSKTopicConfigRule) validateCompressionType(
 		)
 		if err != nil {
 			return fmt.Errorf("emitting issue with fix: wrong compression type: %w", err)
+		}
+		return nil
+	}
+	return nil
+}
+
+const (
+	cleanupPolicyKey     = "cleanup.policy"
+	cleanupPolicyDefault = "delete"
+)
+
+var (
+	cleanupPolicyDefaultFix  = fmt.Sprintf(`"%s" = "%s"`, cleanupPolicyKey, cleanupPolicyDefault)
+	cleanupPolicyValidValues = []string{"delete", "compact"}
+)
+
+func (r *MSKTopicConfigRule) ValidateCleanupPolicy(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	cpPair, hasCp := configKeyToPairMap[cleanupPolicyKey]
+	if !hasCp {
+		err := runner.EmitIssueWithFix(
+			r,
+			fmt.Sprintf("missing %s: using default '%s'", cleanupPolicyKey, cleanupPolicyDefault),
+			config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+cleanupPolicyDefaultFix)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue with fix: no cleanup policy: %w", err)
+		}
+		return nil
+	}
+
+	var cpVal string
+	diags := gohcl.DecodeExpression(cpPair.Value, nil, &cpVal)
+	if diags.HasErrors() {
+		return diags
+	}
+	if !slices.Contains(cleanupPolicyValidValues, cpVal) {
+		err := runner.EmitIssue(
+			r,
+			fmt.Sprintf(
+				"invalid %s: it must be one of [%s], but currently is '%s'",
+				cleanupPolicyKey,
+				strings.Join(cleanupPolicyValidValues, ", "),
+				cpVal,
+			),
+			cpPair.Value.Range(),
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: invalid cleanup policy: %w", err)
 		}
 		return nil
 	}
