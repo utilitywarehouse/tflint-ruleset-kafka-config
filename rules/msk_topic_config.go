@@ -306,8 +306,8 @@ func (r *MSKTopicConfigRule) gateAndValidateCleanupPolicy(
 const (
 	retentionTimeAttr = "retention.ms"
 	millisInOneDay    = 1 * 24 * 60 * 60 * 1000
-	// The threshold or retention time in milliseconds when remote storage is supported.
-	tieredStorageThreshold          = 3 * millisInOneDay
+	// The threshold on retention time when remote storage is supported.
+	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
 	localRetentionTimeAttr          = "local.retention.ms"
 	localRetentionTimeInDaysDefault = 1
@@ -335,13 +335,16 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return err
 	}
 
-	if *rtIntVal < tieredStorageThreshold {
+	if *rtIntVal < tieredStorageThresholdInDays*millisInOneDay {
 		return nil
 	}
 
 	_, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
 	if !hasTieredStorageAttr {
-		msg := "tiered storage should be enabled when retention time is higher than 3 days"
+		msg := fmt.Sprintf(
+			"tiered storage should be enabled when retention time is higher than %d days",
+			tieredStorageThresholdInDays,
+		)
 		err := runner.EmitIssueWithFix(r, msg, config.Range,
 			func(f tflint.Fixer) error {
 				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+enableTieredStorage)
