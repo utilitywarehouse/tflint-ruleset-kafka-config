@@ -398,6 +398,53 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
 			},
 		},
 		{
+			name: "tiered storage disabled for retention period bigger than 3 days",
+			input: `
+resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
+  name               = "topic_with_more_than_3_days_retention_tiered_disabled"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "false"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200000"
+    "compression.type"      = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
+  name               = "topic_with_more_than_3_days_retention_tiered_disabled"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200000"
+    "compression.type"      = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "tiered storage should be enabled when retention time is higher than 3 days",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 6, Column: 31},
+						End:      hcl.Pos{Line: 6, Column: 38},
+					},
+				},
+				{
+					Rule:    rule,
+					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 10, Column: 4},
+					},
+				},
+			},
+		},
+		{
 			name: "good topic definition",
 			input: `
 resource "kafka_topic" "good topic" {

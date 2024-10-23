@@ -309,6 +309,7 @@ const (
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
+	tieredStorageEnabledValue       = "true"
 	localRetentionTimeAttr          = "local.retention.ms"
 	localRetentionTimeInDaysDefault = 1
 )
@@ -316,7 +317,7 @@ const (
 /*	Putting an invalid value by default to force users to put a valid value */
 var (
 	retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
-	enableTieredStorage      = fmt.Sprintf(`"%s" = "true"`, tieredStorageEnableAttr)
+	enableTieredStorage      = fmt.Sprintf(`"%s" = "%s"`, tieredStorageEnableAttr, tieredStorageEnabledValue)
 	localRetentionTimeFix    = fmt.Sprintf(
 		`# keep data in hot storage for %d day
      "%s" = "%d"`,
@@ -339,20 +340,9 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return nil
 	}
 
-	_, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
-	if !hasTieredStorageAttr {
-		msg := fmt.Sprintf(
-			"tiered storage should be enabled when retention time is higher than %d days",
-			tieredStorageThresholdInDays,
-		)
-		err := runner.EmitIssueWithFix(r, msg, config.Range,
-			func(f tflint.Fixer) error {
-				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+enableTieredStorage)
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
-		}
+	err = r.validateTieredStorageEnabled(runner, config, configKeyToPairMap)
+	if err != nil {
+		return err
 	}
 
 	_, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
@@ -371,6 +361,52 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
 		}
 	}
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	tieredStoragePair, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
+	if !hasTieredStorageAttr {
+		msg := fmt.Sprintf(
+			"tiered storage should be enabled when retention time is higher than %d days",
+			tieredStorageThresholdInDays,
+		)
+		err := runner.EmitIssueWithFix(r, msg, config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+enableTieredStorage)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
+		}
+		return nil
+	}
+
+	var tieredStorageVal string
+	diags := gohcl.DecodeExpression(tieredStoragePair.Value, nil, &tieredStorageVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	if tieredStorageVal != tieredStorageEnabledValue {
+		msg := fmt.Sprintf(
+			"tiered storage should be enabled when retention time is higher than %d days",
+			tieredStorageThresholdInDays,
+		)
+		err := runner.EmitIssueWithFix(r, msg, tieredStoragePair.Value.Range(),
+			func(f tflint.Fixer) error {
+				return f.ReplaceText(tieredStoragePair.Value.Range(), fmt.Sprintf(`"%s"`, tieredStorageEnabledValue))
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: set remote storage on enable: %w", err)
+		}
+	}
+
 	return nil
 }
 
