@@ -97,7 +97,7 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	cleanupPolicy, err := r.validateCleanupPolicy(runner, configAttr, configKeyToPairMap)
+	cleanupPolicy, err := r.gateAndValidateCleanupPolicy(runner, configAttr, configKeyToPairMap)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ var (
 	cleanupPolicyValidValues = []string{cleanupPolicyDelete, cleanupPolicyCompact}
 )
 
-func (r *MSKTopicConfigRule) validateCleanupPolicy(
+func (r *MSKTopicConfigRule) gateAndValidateCleanupPolicy(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
