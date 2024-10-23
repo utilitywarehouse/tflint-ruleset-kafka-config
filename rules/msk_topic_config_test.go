@@ -9,6 +9,7 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
+//nolint:maintidx
 func Test_MSKTopicConfigRule(t *testing.T) {
 	rule := &MSKTopicConfigRule{}
 
@@ -26,6 +27,7 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -49,6 +51,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			fixed: `
@@ -58,6 +61,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -81,6 +85,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			fixed: `
@@ -90,6 +95,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -131,6 +137,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			fixed: `
@@ -140,6 +147,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -149,7 +157,7 @@ resource "kafka_topic" "topic_without_compression_type" {
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 7, Column: 4},
+						End:      hcl.Pos{Line: 8, Column: 4},
 					},
 				},
 			},
@@ -163,6 +171,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "gzip"
+    "retention.ms"     = "86400000"
   }
 }`,
 			fixed: `
@@ -172,6 +181,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -194,6 +204,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
+    "retention.ms"     = "86400000"
   }
 }`,
 			fixed: `
@@ -203,6 +214,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{
@@ -212,7 +224,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 7, Column: 4},
+						End:      hcl.Pos{Line: 8, Column: 4},
 					},
 				},
 			},
@@ -241,6 +253,105 @@ resource "kafka_topic" "topic_with_invalid_cleanup_policy" {
 			},
 		},
 		{
+			name: "no retention on topic with delete policy",
+			input: `
+resource "kafka_topic" "topic_without_retention" {
+  name               = "topic_without_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "compression.type" = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_without_retention" {
+  name               = "topic_without_retention"
+  replication_factor = 3
+  config = {
+    "retention.ms"     = "???"
+    "cleanup.policy"   = "delete"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "retention.ms must be defined on a topic with cleanup policy delete",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 8, Column: 4},
+					},
+				},
+			},
+		},
+		{
+			// checking that multiple fixes will be inserted correctly as the deletion policy defaults to delete and a retention template should be inserted in this case
+			name: "topic without policy and without retention time",
+			input: `
+resource "kafka_topic" "topic_without_policy_and_retention" {
+  name               = "topic_without_policy_and_retention"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_without_policy_and_retention" {
+  name               = "topic_without_policy_and_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "???"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "missing cleanup.policy: using default 'delete'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 7, Column: 4},
+					},
+				},
+				{
+					Rule:    rule,
+					Message: "retention.ms must be defined on a topic with cleanup policy delete",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 7, Column: 4},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid retention time",
+			input: `
+resource "kafka_topic" "topic_with_invalid_retention" {
+  name               = "topic_with_invalid_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "???"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "retention.ms must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 7, Column: 26},
+						End:      hcl.Pos{Line: 7, Column: 31},
+					},
+				},
+			},
+		},
+		{
 			name: "good topic definition",
 			input: `
 resource "kafka_topic" "good topic" {
@@ -249,6 +360,7 @@ resource "kafka_topic" "good topic" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
+    "retention.ms"     = "86400000"
   }
 }`,
 			expected: []*helper.Issue{},

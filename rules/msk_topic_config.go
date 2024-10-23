@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -96,8 +97,17 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	if err := r.validateCleanupPolicy(runner, configAttr, configKeyToPairMap); err != nil {
+	cleanupPolicy, err := r.validateCleanupPolicy(runner, configAttr, configKeyToPairMap)
+	if err != nil {
 		return err
+	}
+	switch cleanupPolicy {
+	case cleanupPolicyDelete:
+		if err := r.validateRetentionForDeletePolicy(runner, configAttr, configKeyToPairMap); err != nil {
+			return err
+		}
+	case cleanupPolicyCompact:
+		// todo: validate no retention & remote storage for compact
 	}
 	return nil
 }
@@ -238,19 +248,21 @@ func (r *MSKTopicConfigRule) validateCompressionType(
 
 const (
 	cleanupPolicyKey     = "cleanup.policy"
-	cleanupPolicyDefault = "delete"
+	cleanupPolicyDelete  = "delete"
+	cleanupPolicyCompact = "compact"
+	cleanupPolicyDefault = cleanupPolicyDelete
 )
 
 var (
 	cleanupPolicyDefaultFix  = fmt.Sprintf(`"%s" = "%s"`, cleanupPolicyKey, cleanupPolicyDefault)
-	cleanupPolicyValidValues = []string{"delete", "compact"}
+	cleanupPolicyValidValues = []string{cleanupPolicyDelete, cleanupPolicyCompact}
 )
 
 func (r *MSKTopicConfigRule) validateCleanupPolicy(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
-) error {
+) (string, error) {
 	cpPair, hasCp := configKeyToPairMap[cleanupPolicyKey]
 	if !hasCp {
 		err := runner.EmitIssueWithFix(
@@ -262,15 +274,15 @@ func (r *MSKTopicConfigRule) validateCleanupPolicy(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue with fix: no cleanup policy: %w", err)
+			return "", fmt.Errorf("emitting issue with fix: no cleanup policy: %w", err)
 		}
-		return nil
+		return cleanupPolicyDefault, nil
 	}
 
 	var cpVal string
 	diags := gohcl.DecodeExpression(cpPair.Value, nil, &cpVal)
 	if diags.HasErrors() {
-		return diags
+		return "", diags
 	}
 	if !slices.Contains(cleanupPolicyValidValues, cpVal) {
 		err := runner.EmitIssue(
@@ -284,9 +296,57 @@ func (r *MSKTopicConfigRule) validateCleanupPolicy(
 			cpPair.Value.Range(),
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: invalid cleanup policy: %w", err)
+			return "", fmt.Errorf("emitting issue: invalid cleanup policy: %w", err)
+		}
+		return "", nil
+	}
+	return cpVal, nil
+}
+
+const (
+	retentionTimeAttr = "retention.ms"
+)
+
+/*	Putting an invalid value by default to force users to put a valid value */
+var retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
+
+func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	rtPair, hasRt := configKeyToPairMap[retentionTimeAttr]
+	if !hasRt {
+		msg := fmt.Sprintf("%s must be defined on a topic with cleanup policy delete", retentionTimeAttr)
+		err := runner.EmitIssueWithFix(r, msg, config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+retentionTimeDefTemplate)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: no retention time: %w", err)
 		}
 		return nil
 	}
+
+	var rtVal string
+	diags := gohcl.DecodeExpression(rtPair.Value, nil, &rtVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	_, err := strconv.Atoi(rtVal)
+	if err != nil {
+		msg := fmt.Sprintf(
+			"%s must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
+			retentionTimeAttr,
+		)
+		err := runner.EmitIssue(r, msg, rtPair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: invalid retention time: %w", err)
+		}
+		return nil
+	}
+
 	return nil
 }
