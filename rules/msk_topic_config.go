@@ -317,10 +317,8 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 ) error {
 	rtPair, hasRt := configKeyToPairMap[retentionTimeAttr]
 	if !hasRt {
-		err := runner.EmitIssueWithFix(
-			r,
-			fmt.Sprintf("%s must be defined on a topic with cleanup policy delete", retentionTimeAttr),
-			config.Range,
+		msg := fmt.Sprintf("%s must be defined on a topic with cleanup policy delete", retentionTimeAttr)
+		err := runner.EmitIssueWithFix(r, msg, config.Range,
 			func(f tflint.Fixer) error {
 				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+retentionTimeDefTemplate)
 			},
@@ -339,18 +337,16 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 
 	_, err := strconv.Atoi(rtVal)
 	if err != nil {
-		err := runner.EmitIssue(
-			r,
-			fmt.Sprintf(
-				"%s must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
-				retentionTimeAttr,
-			),
-			rtPair.Value.Range(),
+		msg := fmt.Sprintf(
+			"%s must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
+			retentionTimeAttr,
 		)
+		err := runner.EmitIssue(r, msg, rtPair.Value.Range())
 		if err != nil {
 			return fmt.Errorf("emitting issue: invalid retention time: %w", err)
 		}
 		return nil
 	}
+
 	return nil
 }
