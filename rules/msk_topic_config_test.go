@@ -379,7 +379,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "tiered storage should be enabled when retention time is longer than 3 days",
+					Message: "tiered storage must be enabled when retention time is longer than 3 days",
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
@@ -425,7 +425,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "tiered storage should be enabled when retention time is longer than 3 days",
+					Message: "tiered storage must be enabled when retention time is longer than 3 days",
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
@@ -473,7 +473,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "tiered storage should be enabled when retention time is longer than 3 days",
+					Message: "tiered storage must be enabled when retention time is longer than 3 days",
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 5, Column: 3},
@@ -511,7 +511,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
 			expected: []*helper.Issue{
 				{
 					Rule:    rule,
-					Message: "tiered storage should be enabled when retention time is longer than 3 days",
+					Message: "tiered storage must be enabled when retention time is longer than 3 days",
 					Range: hcl.Range{
 						Filename: fileName,
 						Start:    hcl.Pos{Line: 6, Column: 31},

@@ -332,8 +332,12 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
 	retentionTime, err := r.getAndValidateRetentionTime(runner, config, configKeyToPairMap)
-	if err != nil || retentionTime == nil {
+	if err != nil {
 		return err
+	}
+
+	if retentionTime == nil {
+		return nil
 	}
 
 	if *retentionTime <= tieredStorageThresholdInDays*millisInOneDay && !isInfiniteRetention(*retentionTime) {
@@ -406,7 +410,7 @@ func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
 ) error {
 	tieredStoragePair, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
 	tieredStorageEnableMsg := fmt.Sprintf(
-		"tiered storage should be enabled when retention time is longer than %d days",
+		"tiered storage must be enabled when retention time is longer than %d days",
 		tieredStorageThresholdInDays,
 	)
 
