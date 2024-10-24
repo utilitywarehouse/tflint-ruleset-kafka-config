@@ -372,7 +372,7 @@ func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
 	tieredStoragePair, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
 	if !hasTieredStorageAttr {
 		msg := fmt.Sprintf(
-			"tiered storage should be enabled when retention time is higher than %d days",
+			"tiered storage should be enabled when retention time is longer than %d days",
 			tieredStorageThresholdInDays,
 		)
 		err := runner.EmitIssueWithFix(r, msg, config.Range,
@@ -394,7 +394,7 @@ func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
 
 	if tieredStorageVal != tieredStorageEnabledValue {
 		msg := fmt.Sprintf(
-			"tiered storage should be enabled when retention time is higher than %d days",
+			"tiered storage should be enabled when retention time is longer than %d days",
 			tieredStorageThresholdInDays,
 		)
 		err := runner.EmitIssueWithFix(r, msg, tieredStoragePair.Value.Range(),
