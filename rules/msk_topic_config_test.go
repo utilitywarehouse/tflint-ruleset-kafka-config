@@ -484,6 +484,44 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
 			},
 		},
 		{
+			name: "tiered storage enabled without local retention",
+			input: `
+resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
+  name               = "topic_with_tiered_storage_missing_local_retention"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "compression.type"      = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
+  name               = "topic_with_tiered_storage_missing_local_retention"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "compression.type"      = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 10, Column: 4},
+					},
+				},
+			},
+		},
+		{
 			name: "good topic definition without retention",
 			input: `
 resource "kafka_topic" "good topic" {
