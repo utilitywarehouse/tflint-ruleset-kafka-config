@@ -398,6 +398,52 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
 			},
 		},
 		{
+			name: "infinite retention time requires tiered storage",
+			input: `
+resource "kafka_topic" "topic_with_infinite_retention" {
+  name               = "topic_with_infinite_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "-1"
+    "compression.type" = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_infinite_retention" {
+  name               = "topic_with_infinite_retention"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    # keep data in hot storage for 1 day
+    "local.retention.ms" = "86400000"
+    "cleanup.policy"     = "delete"
+    "retention.ms"       = "-1"
+    "compression.type"   = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "tiered storage should be enabled when retention time is longer than 3 days",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 9, Column: 4},
+					},
+				},
+				{
+					Rule:    rule,
+					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 5, Column: 3},
+						End:      hcl.Pos{Line: 9, Column: 4},
+					},
+				},
+			},
+		},
+		{
 			name: "forgot tiered storage enabling",
 			input: `
 resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
