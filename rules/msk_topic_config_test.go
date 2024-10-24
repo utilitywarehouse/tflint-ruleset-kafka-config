@@ -484,7 +484,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
 			},
 		},
 		{
-			name: "good topic definition",
+			name: "good topic definition without retention",
 			input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
@@ -493,6 +493,23 @@ resource "kafka_topic" "good topic" {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
     "retention.ms"     = "86400000"
+  }
+}`,
+			expected: []*helper.Issue{},
+		},
+		{
+			name: "good topic definition with retention",
+			input: `
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "2592000000"
+    "compression.type"      = "zstd"
   }
 }`,
 			expected: []*helper.Issue{},
