@@ -355,7 +355,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
-	_, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
+	localRetTimePair, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
 	if !hasLocalRetTimeAttr {
 		msg := fmt.Sprintf(
 			"missing %s when tiered storage is enabled: using default '%d'",
@@ -369,6 +369,25 @@ func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
 		)
 		if err != nil {
 			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
+		}
+		return nil
+	}
+
+	var localRetTimeVal string
+	diags := gohcl.DecodeExpression(localRetTimePair.Value, nil, &localRetTimeVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	_, err := strconv.Atoi(localRetTimeVal)
+	if err != nil {
+		msg := fmt.Sprintf(
+			"%s must have a valid integer value expressed in milliseconds",
+			localRetentionTimeAttr,
+		)
+		err := runner.EmitIssue(r, msg, localRetTimePair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: invalid local retention time: %w", err)
 		}
 		return nil
 	}

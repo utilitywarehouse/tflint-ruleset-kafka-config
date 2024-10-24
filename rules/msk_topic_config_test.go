@@ -568,6 +568,32 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
 			},
 		},
 		{
+			name: "tiered storage enabled and local retention invalid",
+			input: `
+resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
+  name               = "topic_with_tiered_storage_local_retention_invalid"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "local.retention.ms"    = "invalid-val"
+    "compression.type"      = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "local.retention.ms must have a valid integer value expressed in milliseconds",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 9, Column: 31},
+						End:      hcl.Pos{Line: 9, Column: 44},
+					},
+				},
+			},
+		},
+		{
 			name: "good topic definition without retention",
 			input: `
 resource "kafka_topic" "good topic" {
