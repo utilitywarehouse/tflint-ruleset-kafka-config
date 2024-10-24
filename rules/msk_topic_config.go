@@ -340,11 +340,21 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return nil
 	}
 
-	err = r.validateTieredStorageEnabled(runner, config, configKeyToPairMap)
-	if err != nil {
+	if err := r.validateTieredStorageEnabled(runner, config, configKeyToPairMap); err != nil {
 		return err
 	}
 
+	if err := r.validateLocalRetentionSpecified(runner, config, configKeyToPairMap); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
 	_, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
 	if !hasLocalRetTimeAttr {
 		msg := fmt.Sprintf(
@@ -360,7 +370,9 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		if err != nil {
 			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
 		}
+		return nil
 	}
+
 	return nil
 }
 
