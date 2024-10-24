@@ -395,8 +395,8 @@ func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
 	return nil
 }
 
-func isInfiniteRetention(rtIntVal int) bool {
-	return rtIntVal < 0
+func isInfiniteRetention(val int) bool {
+	return val < 0
 }
 
 func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
