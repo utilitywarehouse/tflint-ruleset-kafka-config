@@ -7,20 +7,39 @@ An MSK topic configuration must comply with the following rules:
 - the 'compression.type' must always be set to `zstd`. This is a very good compression algorithm, and it is set by default for the producer in our [kafka lib](https://github.com/utilitywarehouse/uwos-go/tree/main/pubsub/kafka)
 - the 'cleanup.policy' must be specified and must be one of 'delete' or 'compact'. If not specified, it is set automatically on 'delete'. See [kafka spec](https://kafka.apache.org/30/generated/topic_config.html#topicconfigs_cleanup.policy)
 
+When cleanup policy is 'delete': 
+- 'retention.ms' must be specified in the config map with a valid int value expressed in milliseconds
+- for a retention period longer than 3 days, tiered storage must be enabled and the local.retention.ms must be specified
+
 ## Example
 
 ### Good example
 
 ```hcl
+# Good topic example with remote storage enabled
 resource "kafka_topic" "good_topic" {
   name = "pubsub.good-topic"
   replication_factor = 3
   config = {
-    "compression.type" = "zstd"
-    "cleanup.policy"   = "delete"
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "2592000000"
+    "compression.type"      = "zstd"
   }
 }
 
+# Good topic that doesn't require remote storage as the retention time is less than 3 days
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "compression.type" = "zstd"
+    "retention.ms"     = "86400000"
+  }
+}
 ```
 
 ### Bad examples
@@ -39,11 +58,32 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   }
 }
 
-# topic with cleanup policy
+# topic with invalid cleanup policy
 resource "kafka_topic" "topic_with_wrong_cleanup_policy" {
   name = "wrong-topic"
   config = {
     "cleanup.policy" = "invalid-value"
+  }
+}
+
+# no retention on topic with delete policy
+resource "kafka_topic" "topic_without_retention" {
+  name               = "topic_without_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "compression.type" = "zstd"
+  }
+}
+
+# topic with retention time longer than 3 days requires tiered storage
+resource "kafka_topic" "topic_with_more_than_3_days_retention" {
+  name               = "topic_with_more_than_3_days_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "259200001"
+    "compression.type" = "zstd"
   }
 }
 ```

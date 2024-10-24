@@ -352,7 +352,7 @@ resource "kafka_topic" "topic_with_invalid_retention" {
 			},
 		},
 		{
-			name: "retention time bigger than 3 days requires tiered storage",
+			name: "retention time longer than 3 days requires tiered storage",
 			input: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   name               = "topic_with_more_than_3_days_retention"
