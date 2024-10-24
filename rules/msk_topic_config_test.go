@@ -359,7 +359,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "259200000"
+    "retention.ms"     = "259200001"
     "compression.type" = "zstd"
   }
 }`,
@@ -372,7 +372,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200000"
+    "retention.ms"       = "259200001"
     "compression.type"   = "zstd"
   }
 }`,
@@ -406,7 +406,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200000"
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,
@@ -419,7 +419,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200000"
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,

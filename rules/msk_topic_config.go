@@ -336,7 +336,7 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return err
 	}
 
-	if *rtIntVal < tieredStorageThresholdInDays*millisInOneDay {
+	if *rtIntVal <= tieredStorageThresholdInDays*millisInOneDay {
 		return nil
 	}
 
