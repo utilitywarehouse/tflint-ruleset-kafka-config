@@ -97,7 +97,7 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	cleanupPolicy, err := r.validateCleanupPolicy(runner, configAttr, configKeyToPairMap)
+	cleanupPolicy, err := r.getAndValidateCleanupPolicy(runner, configAttr, configKeyToPairMap)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ var (
 	cleanupPolicyValidValues = []string{cleanupPolicyDelete, cleanupPolicyCompact}
 )
 
-func (r *MSKTopicConfigRule) validateCleanupPolicy(
+func (r *MSKTopicConfigRule) getAndValidateCleanupPolicy(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
@@ -305,18 +305,154 @@ func (r *MSKTopicConfigRule) validateCleanupPolicy(
 
 const (
 	retentionTimeAttr = "retention.ms"
+	millisInOneDay    = 1 * 24 * 60 * 60 * 1000
+	// The threshold on retention time when remote storage is supported.
+	tieredStorageThresholdInDays    = 3
+	tieredStorageEnableAttr         = "remote.storage.enable"
+	tieredStorageEnabledValue       = "true"
+	localRetentionTimeAttr          = "local.retention.ms"
+	localRetentionTimeInDaysDefault = 1
 )
 
 /*	Putting an invalid value by default to force users to put a valid value */
-var retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
+var (
+	retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
+	enableTieredStorage      = fmt.Sprintf(`"%s" = "%s"`, tieredStorageEnableAttr, tieredStorageEnabledValue)
+	localRetentionTimeFix    = fmt.Sprintf(
+		`# keep data in hot storage for %d day
+     "%s" = "%d"`,
+		localRetentionTimeInDaysDefault,
+		localRetentionTimeAttr,
+		localRetentionTimeInDaysDefault*millisInOneDay)
+)
 
 func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
-	rtPair, hasRt := configKeyToPairMap[retentionTimeAttr]
-	if !hasRt {
+	retentionTime, err := r.getAndValidateRetentionTime(runner, config, configKeyToPairMap)
+	if err != nil {
+		return err
+	}
+
+	if retentionTime == nil {
+		return nil
+	}
+
+	if *retentionTime <= tieredStorageThresholdInDays*millisInOneDay && !isInfiniteRetention(*retentionTime) {
+		return nil
+	}
+
+	if err := r.validateTieredStorageEnabled(runner, config, configKeyToPairMap); err != nil {
+		return err
+	}
+
+	if err := r.validateLocalRetentionSpecified(runner, config, configKeyToPairMap); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	localRetTimePair, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
+	if !hasLocalRetTimeAttr {
+		msg := fmt.Sprintf(
+			"missing %s when tiered storage is enabled: using default '%d'",
+			localRetentionTimeAttr,
+			localRetentionTimeInDaysDefault*millisInOneDay,
+		)
+		err := runner.EmitIssueWithFix(r, msg, config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+localRetentionTimeFix)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
+		}
+		return nil
+	}
+
+	var localRetTimeVal string
+	diags := gohcl.DecodeExpression(localRetTimePair.Value, nil, &localRetTimeVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	_, err := strconv.Atoi(localRetTimeVal)
+	if err != nil {
+		msg := fmt.Sprintf(
+			"%s must have a valid integer value expressed in milliseconds",
+			localRetentionTimeAttr,
+		)
+		err := runner.EmitIssue(r, msg, localRetTimePair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: invalid local retention time: %w", err)
+		}
+		return nil
+	}
+
+	return nil
+}
+
+func isInfiniteRetention(val int) bool {
+	return val < 0
+}
+
+func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	tieredStoragePair, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
+	tieredStorageEnableMsg := fmt.Sprintf(
+		"tiered storage must be enabled when retention time is longer than %d days",
+		tieredStorageThresholdInDays,
+	)
+
+	if !hasTieredStorageAttr {
+		err := runner.EmitIssueWithFix(r, tieredStorageEnableMsg, config.Range,
+			func(f tflint.Fixer) error {
+				return f.InsertTextAfter(config.Expr.StartRange(), "\n"+enableTieredStorage)
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: remote storage enable: %w", err)
+		}
+		return nil
+	}
+
+	var tieredStorageVal string
+	diags := gohcl.DecodeExpression(tieredStoragePair.Value, nil, &tieredStorageVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	if tieredStorageVal != tieredStorageEnabledValue {
+		err := runner.EmitIssueWithFix(r, tieredStorageEnableMsg, tieredStoragePair.Value.Range(),
+			func(f tflint.Fixer) error {
+				return f.ReplaceText(tieredStoragePair.Value.Range(), fmt.Sprintf(`"%s"`, tieredStorageEnabledValue))
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: set remote storage on enable: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
+	runner tflint.Runner,
+	config *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) (*int, error) {
+	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
+	if !hasRetTime {
 		msg := fmt.Sprintf("%s must be defined on a topic with cleanup policy delete", retentionTimeAttr)
 		err := runner.EmitIssueWithFix(r, msg, config.Range,
 			func(f tflint.Fixer) error {
@@ -324,29 +460,28 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: no retention time: %w", err)
+			return nil, fmt.Errorf("emitting issue: no retention time: %w", err)
 		}
-		return nil
+		return nil, nil
 	}
 
-	var rtVal string
-	diags := gohcl.DecodeExpression(rtPair.Value, nil, &rtVal)
+	var retTimeVal string
+	diags := gohcl.DecodeExpression(retTimePair.Value, nil, &retTimeVal)
 	if diags.HasErrors() {
-		return diags
+		return nil, diags
 	}
 
-	_, err := strconv.Atoi(rtVal)
+	retTimeIntVal, err := strconv.Atoi(retTimeVal)
 	if err != nil {
 		msg := fmt.Sprintf(
 			"%s must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
 			retentionTimeAttr,
 		)
-		err := runner.EmitIssue(r, msg, rtPair.Value.Range())
+		err := runner.EmitIssue(r, msg, retTimePair.Value.Range())
 		if err != nil {
-			return fmt.Errorf("emitting issue: invalid retention time: %w", err)
+			return nil, fmt.Errorf("emitting issue: invalid retention time: %w", err)
 		}
-		return nil
+		return nil, nil
 	}
-
-	return nil
+	return &retTimeIntVal, nil
 }
