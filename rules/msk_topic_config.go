@@ -331,12 +331,12 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
-	rtIntVal, err := r.getAndValidateRetentionTime(runner, config, configKeyToPairMap)
-	if err != nil || rtIntVal == nil {
+	retentionTime, err := r.getAndValidateRetentionTime(runner, config, configKeyToPairMap)
+	if err != nil || retentionTime == nil {
 		return err
 	}
 
-	if *rtIntVal <= tieredStorageThresholdInDays*millisInOneDay && !isInfiniteRetention(*rtIntVal) {
+	if *retentionTime <= tieredStorageThresholdInDays*millisInOneDay && !isInfiniteRetention(*retentionTime) {
 		return nil
 	}
 
@@ -447,8 +447,8 @@ func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) (*int, error) {
-	rtPair, hasRt := configKeyToPairMap[retentionTimeAttr]
-	if !hasRt {
+	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
+	if !hasRetTime {
 		msg := fmt.Sprintf("%s must be defined on a topic with cleanup policy delete", retentionTimeAttr)
 		err := runner.EmitIssueWithFix(r, msg, config.Range,
 			func(f tflint.Fixer) error {
@@ -461,23 +461,23 @@ func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
 		return nil, nil
 	}
 
-	var rtVal string
-	diags := gohcl.DecodeExpression(rtPair.Value, nil, &rtVal)
+	var retTimeVal string
+	diags := gohcl.DecodeExpression(retTimePair.Value, nil, &retTimeVal)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	rtIntVal, err := strconv.Atoi(rtVal)
+	retTimeIntVal, err := strconv.Atoi(retTimeVal)
 	if err != nil {
 		msg := fmt.Sprintf(
 			"%s must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
 			retentionTimeAttr,
 		)
-		err := runner.EmitIssue(r, msg, rtPair.Value.Range())
+		err := runner.EmitIssue(r, msg, retTimePair.Value.Range())
 		if err != nil {
 			return nil, fmt.Errorf("emitting issue: invalid retention time: %w", err)
 		}
 		return nil, nil
 	}
-	return &rtIntVal, nil
+	return &retTimeIntVal, nil
 }
