@@ -44,34 +44,6 @@ module "second_app" {
 			},
 		},
 		{
-			name: "reports duplicate app names across files",
-			files: map[string]string{
-				"first.tf": `
-module "first_app" {
-  source           = "../../../modules/tls-app"
-  cert_common_name = "my-namespace/my-app"
-}
-`,
-				"second.tf": `
-module "second_app" {
-  source           = "../../../modules/tls-app"
-  cert_common_name = "my-namespace/my-app"
-}
-`,
-			},
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "'cert_common_name' must be unique across a module, but 'my-namespace/my-app' has already been seen",
-					Range: hcl.Range{
-						Filename: "second.tf",
-						Start:    hcl.Pos{Line: 4, Column: 3},
-						End:      hcl.Pos{Line: 4, Column: 43},
-					},
-				},
-			},
-		},
-		{
 			name: "reports repeated duplicate app names",
 			files: map[string]string{
 				"file.tf": `
@@ -138,4 +110,36 @@ module "second_app" {
 			helper.AssertIssues(t, tc.expected, runner.Issues)
 		})
 	}
+
+	t.Run("reports duplicate names across files", func(t *testing.T) {
+		// since filenames are provided as map keys, and iteration order of
+		// these is not deterministic, we can't know which file is checked
+		// first so this separate test asserts without checking the range
+		files := map[string]string{
+			"first.tf": `
+module "first_app" {
+  source           = "../../../modules/tls-app"
+  cert_common_name = "my-namespace/my-app"
+}
+`,
+			"second.tf": `
+module "second_app" {
+  source           = "../../../modules/tls-app"
+  cert_common_name = "my-namespace/my-app"
+}
+`,
+		}
+		expectedIssues := []*helper.Issue{
+			{
+				Rule:    rule,
+				Message: "'cert_common_name' must be unique across a module, but 'my-namespace/my-app' has already been seen",
+			},
+		}
+
+		runner := helper.TestRunner(t, files)
+
+		require.NoError(t, rule.Check(runner))
+
+		helper.AssertIssuesWithoutRange(t, expectedIssues, runner.Issues)
+	})
 }
