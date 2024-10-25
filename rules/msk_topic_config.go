@@ -340,24 +340,26 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return nil
 	}
 
-	if !mustEnableTieredStorage(*retentionTime) {
+	switch mustEnableTieredStorage(*retentionTime) {
+	case true:
+		if err := r.validateTieredStorageEnabled(runner, config, configKeyToPairMap); err != nil {
+			return err
+		}
+
+		if err := r.validateLocalRetentionDefined(runner, config, configKeyToPairMap); err != nil {
+			return err
+		}
+
+	case false:
 		if err := r.validateTieredStorageNotEnabled(runner, configKeyToPairMap); err != nil {
 			return err
 		}
 
-		if err := r.validateLocalRetentionNotSpecified(runner, configKeyToPairMap); err != nil {
+		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap); err != nil {
 			return err
 		}
-		return nil
 	}
 
-	if err := r.validateTieredStorageEnabled(runner, config, configKeyToPairMap); err != nil {
-		return err
-	}
-
-	if err := r.validateLocalRetentionSpecified(runner, config, configKeyToPairMap); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -365,7 +367,7 @@ func mustEnableTieredStorage(retentionTime int) bool {
 	return retentionTime >= tieredStorageThresholdInDays*millisInOneDay || isInfiniteRetention(retentionTime)
 }
 
-func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
+func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
@@ -410,7 +412,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
 	return nil
 }
 
-func (r *MSKTopicConfigRule) validateLocalRetentionNotSpecified(
+func (r *MSKTopicConfigRule) validateLocalRetentionNotDefined(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
