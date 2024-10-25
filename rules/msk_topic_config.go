@@ -344,6 +344,10 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		if err := r.validateTieredStorageNotEnabled(runner, configKeyToPairMap); err != nil {
 			return err
 		}
+
+		if err := r.validateLocalRetentionNotSpecified(runner, configKeyToPairMap); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -403,6 +407,39 @@ func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
 		return nil
 	}
 
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateLocalRetentionNotSpecified(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	localRetTimePair, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
+	if !hasLocalRetTimeAttr {
+		return nil
+	}
+
+	msg := fmt.Sprintf(
+		"defining %s is misleading when tiered storage is disabled due to less than %d days retention: removing it...",
+		localRetentionTimeAttr,
+		tieredStorageThresholdInDays,
+	)
+	err := runner.EmitIssueWithFix(r, msg, localRetTimePair.Value.Range(),
+		func(f tflint.Fixer) error {
+			/* remove the whole key + value */
+			keyRange := localRetTimePair.Key.Range()
+			return f.Remove(
+				hcl.Range{
+					Filename: keyRange.Filename,
+					Start:    keyRange.Start,
+					End:      localRetTimePair.Value.Range().End,
+				},
+			)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("emitting issue: local storage specified for disabled tiered storage : %w", err)
+	}
 	return nil
 }
 
