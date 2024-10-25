@@ -714,6 +714,49 @@ resource "kafka_topic" "topic_compacted_with_tiered_storage" {
 			},
 		},
 	},
+	{
+		name: "local storage specified for compacted topic",
+		input: `
+resource "kafka_topic" "topic_compacted_with_local_storage" {
+  name               = "topic_compacted_with_local_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "local.retention.ms"    = "86400000"
+    "cleanup.policy"        = "compact"
+    "compression.type"      = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_compacted_with_local_storage" {
+  name               = "topic_compacted_with_local_storage"
+  replication_factor = 3
+  config = {
+
+
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage is not supported for compacted topic: disabling it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 37},
+				},
+			},
+			{
+				Message: "defining local.retention.ms is misleading when tiered storage is disabled due to compacted topic: removing it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 31},
+					End:      hcl.Pos{Line: 7, Column: 41},
+				},
+			},
+		},
+	},
 }
 
 var goodConfigTests = []topicConfigTestCase{

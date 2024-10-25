@@ -119,7 +119,10 @@ func (r *MSKTopicConfigRule) validateCleanupPolicyConfig(
 		if err := r.validateTieredStorageDisabled(runner, configKeyToPairMap, reason); err != nil {
 			return err
 		}
-		// todo: validate no retention & remote storage for compact
+		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap, reason); err != nil {
+			return err
+		}
+		// todo: validate no retention for compact
 	}
 	return nil
 }
@@ -385,7 +388,7 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 			return err
 		}
 
-		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap); err != nil {
+		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap, reason); err != nil {
 			return err
 		}
 	}
@@ -445,6 +448,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 func (r *MSKTopicConfigRule) validateLocalRetentionNotDefined(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
+	reason string,
 ) error {
 	localRetTimePair, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
 	if !hasLocalRetTimeAttr {
@@ -452,9 +456,9 @@ func (r *MSKTopicConfigRule) validateLocalRetentionNotDefined(
 	}
 
 	msg := fmt.Sprintf(
-		"defining %s is misleading when tiered storage is disabled due to less than %d days retention: removing it...",
+		"defining %s is misleading when tiered storage is disabled due to %s: removing it...",
 		localRetentionTimeAttr,
-		tieredStorageThresholdInDays,
+		reason,
 	)
 	err := runner.EmitIssueWithFix(r, msg, localRetTimePair.Value.Range(),
 		func(f tflint.Fixer) error {
