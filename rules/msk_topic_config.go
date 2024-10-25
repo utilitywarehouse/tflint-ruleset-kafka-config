@@ -340,8 +340,7 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return nil
 	}
 
-	switch mustEnableTieredStorage(*retentionTime) {
-	case true:
+	if mustEnableTieredStorage(*retentionTime) {
 		if err := r.validateTieredStorageEnabled(runner, config, configKeyToPairMap); err != nil {
 			return err
 		}
@@ -349,8 +348,7 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		if err := r.validateLocalRetentionDefined(runner, config, configKeyToPairMap); err != nil {
 			return err
 		}
-
-	case false:
+	} else {
 		if err := r.validateTieredStorageNotEnabled(runner, configKeyToPairMap); err != nil {
 			return err
 		}
