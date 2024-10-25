@@ -594,6 +594,105 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
 			},
 		},
 		{
+			name: "tiered storage enabled for less than 3 days retention",
+			input: `
+resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
+  name               = "topic_with_less_3_days_retention_with_remote_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "86400000"
+    "compression.type"      = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
+  name               = "topic_with_less_3_days_retention_with_remote_storage"
+  replication_factor = 3
+  config = {
+
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 6, Column: 31},
+						End:      hcl.Pos{Line: 6, Column: 37},
+					},
+				},
+			},
+		},
+		{
+			name: "tiered storage explicitly disabled for less than 3 days retention",
+			input: `
+resource "kafka_topic" "topic_with_less_3_days_retention_with_disabled_remote_storage" {
+  name               = "topic_with_less_3_days_retention_with_disabled_remote_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "false"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "86400000"
+    "compression.type"      = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{},
+		},
+		{
+			name: "local storage specified for less than 3 days retention",
+			input: `
+resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
+  name               = "topic_with_less_3_days_retention_with_local_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "172800000"
+    "local.retention.ms"    = "86400000"
+    "compression.type"      = "zstd"
+  }
+}`,
+			fixed: `
+resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
+  name               = "topic_with_less_3_days_retention_with_local_storage"
+  replication_factor = 3
+  config = {
+
+    "cleanup.policy" = "delete"
+    "retention.ms"   = "172800000"
+
+    "compression.type" = "zstd"
+  }
+}`,
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 6, Column: 31},
+						End:      hcl.Pos{Line: 6, Column: 37},
+					},
+				},
+				{
+					Rule:    rule,
+					Message: "defining local.retention.ms is misleading when tiered storage is disabled due to less than 3 days retention: removing it...",
+					Range: hcl.Range{
+						Filename: fileName,
+						Start:    hcl.Pos{Line: 9, Column: 31},
+						End:      hcl.Pos{Line: 9, Column: 41},
+					},
+				},
+			},
+		},
+
+		{
 			name: "good topic definition without retention",
 			input: `
 resource "kafka_topic" "good topic" {
