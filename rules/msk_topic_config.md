@@ -9,7 +9,7 @@ An MSK topic configuration must comply with the following rules:
 
 When cleanup policy is 'delete': 
 - 'retention.ms' must be specified in the config map with a valid int value expressed in milliseconds
-- for a retention period longer than 3 days, tiered storage must be enabled and the local.retention.ms must be specified
+- for a retention period of 3 days or more, tiered storage must be enabled and the local.retention.ms parameter must be defined
 
 ## Example
 
