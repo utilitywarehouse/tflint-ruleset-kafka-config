@@ -352,14 +352,14 @@ resource "kafka_topic" "topic_with_invalid_retention" {
 			},
 		},
 		{
-			name: "retention time longer than 3 days requires tiered storage",
+			name: "retention time of 3 days requires tiered storage",
 			input: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   name               = "topic_with_more_than_3_days_retention"
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "259200001"
+    "retention.ms"     = "259200000"
     "compression.type" = "zstd"
   }
 }`,
@@ -372,7 +372,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200001"
+    "retention.ms"       = "259200000"
     "compression.type"   = "zstd"
   }
 }`,

@@ -340,7 +340,7 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return nil
 	}
 
-	if *retentionTime <= tieredStorageThresholdInDays*millisInOneDay && !isInfiniteRetention(*retentionTime) {
+	if !mustEnableTieredStorage(*retentionTime) {
 		return nil
 	}
 
@@ -352,6 +352,10 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 		return err
 	}
 	return nil
+}
+
+func mustEnableTieredStorage(retentionTime int) bool {
+	return retentionTime >= tieredStorageThresholdInDays*millisInOneDay || isInfiniteRetention(retentionTime)
 }
 
 func (r *MSKTopicConfigRule) validateLocalRetentionSpecified(
