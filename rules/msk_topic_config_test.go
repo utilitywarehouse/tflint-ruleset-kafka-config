@@ -9,20 +9,19 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-//nolint:maintidx
-func Test_MSKTopicConfigRule(t *testing.T) {
-	rule := &MSKTopicConfigRule{}
+type topicConfigTestCase struct {
+	name     string
+	input    string
+	fixed    string
+	expected helper.Issues
+}
 
-	const fileName = "topics.tf"
-	for _, tc := range []struct {
-		name     string
-		input    string
-		fixed    string
-		expected helper.Issues
-	}{
-		{
-			name: "missing replication factor and topic name not defined",
-			input: `
+const fileName = "topics.tf"
+
+var replicationFactorTests = []topicConfigTestCase{
+	{
+		name: "missing replication factor and topic name not defined",
+		input: `
 resource "kafka_topic" "topic_without_repl_factor_and_name" {
   config = {
     "compression.type" = "zstd"
@@ -30,22 +29,21 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing replication_factor: it must be equal to '3'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 2, Column: 1},
-						End:      hcl.Pos{Line: 2, Column: 60},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing replication_factor: it must be equal to '3'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 2, Column: 1},
+					End:      hcl.Pos{Line: 2, Column: 60},
 				},
 			},
 		},
+	},
 
-		{
-			name: "missing replication factor",
-			input: `
+	{
+		name: "missing replication factor",
+		input: `
 resource "kafka_topic" "topic_without_repl_factor" {
   name = "topic_without_repl_factor"
   config = {
@@ -54,7 +52,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
     "retention.ms"     = "86400000"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_without_repl_factor" {
   name               = "topic_without_repl_factor"
   replication_factor = 3
@@ -64,21 +62,20 @@ resource "kafka_topic" "topic_without_repl_factor" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing replication_factor: it must be equal to '3'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 2, Column: 1},
-						End:      hcl.Pos{Line: 2, Column: 51},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing replication_factor: it must be equal to '3'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 2, Column: 1},
+					End:      hcl.Pos{Line: 2, Column: 51},
 				},
 			},
 		},
-		{
-			name: "incorrect replication factor",
-			input: `
+	},
+	{
+		name: "incorrect replication factor",
+		input: `
 resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   name               = "topic_with_incorrect_repl_factor"
   replication_factor = 10
@@ -88,7 +85,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
     "retention.ms"     = "86400000"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   name               = "topic_with_incorrect_repl_factor"
   replication_factor = 3
@@ -98,40 +95,41 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "the replication_factor must be equal to '3'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 4, Column: 3},
-						End:      hcl.Pos{Line: 4, Column: 26},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "the replication_factor must be equal to '3'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 4, Column: 3},
+					End:      hcl.Pos{Line: 4, Column: 26},
 				},
 			},
 		},
-		{
-			name: "missing config attribute",
-			input: `
+	},
+}
+
+var compressionTypeTests = []topicConfigTestCase{
+	{
+		name: "missing config attribute",
+		input: `
 resource "kafka_topic" "topic_without_config" {
   name = "topic_without_config"
   replication_factor = 3
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing config attribute: the topic configuration must be specified in a config attribute",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 2, Column: 1},
-						End:      hcl.Pos{Line: 2, Column: 46},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing config attribute: the topic configuration must be specified in a config attribute",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 2, Column: 1},
+					End:      hcl.Pos{Line: 2, Column: 46},
 				},
 			},
 		},
-		{
-			name: "missing compression type",
-			input: `
+	},
+	{
+		name: "missing compression type",
+		input: `
 resource "kafka_topic" "topic_without_compression_type" {
   name               = "topic_without_compression_type"
   replication_factor = 3
@@ -140,7 +138,7 @@ resource "kafka_topic" "topic_without_compression_type" {
     "retention.ms"     = "86400000"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_without_compression_type" {
   name               = "topic_without_compression_type"
   replication_factor = 3
@@ -150,21 +148,20 @@ resource "kafka_topic" "topic_without_compression_type" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing compression.type: it must be equal to 'zstd'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 8, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing compression.type: it must be equal to 'zstd'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 8, Column: 4},
 				},
 			},
 		},
-		{
-			name: "wrong compression type",
-			input: `
+	},
+	{
+		name: "wrong compression type",
+		input: `
 resource "kafka_topic" "topic_with_wrong_compression_type" {
   name               = "topic_with_wrong_compression_type"
   replication_factor = 3
@@ -174,7 +171,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
     "retention.ms"     = "86400000"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_wrong_compression_type" {
   name               = "topic_with_wrong_compression_type"
   replication_factor = 3
@@ -184,21 +181,23 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "the compression.type value must be equal to 'zstd'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 7, Column: 26},
-						End:      hcl.Pos{Line: 7, Column: 32},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "the compression.type value must be equal to 'zstd'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 26},
+					End:      hcl.Pos{Line: 7, Column: 32},
 				},
 			},
 		},
-		{
-			name: "missing cleanup policy",
-			input: `
+	},
+}
+
+var cleanupPolicyTests = []topicConfigTestCase{
+	{
+		name: "missing cleanup policy",
+		input: `
 resource "kafka_topic" "topic_without_cleanup_policy" {
   name               = "topic_without_cleanup_policy"
   replication_factor = 3
@@ -207,7 +206,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
     "retention.ms"     = "86400000"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_without_cleanup_policy" {
   name               = "topic_without_cleanup_policy"
   replication_factor = 3
@@ -217,21 +216,20 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing cleanup.policy: using default 'delete'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 8, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing cleanup.policy: using default 'delete'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 8, Column: 4},
 				},
 			},
 		},
-		{
-			name: "invalid cleanup policy value",
-			input: `
+	},
+	{
+		name: "invalid cleanup policy value",
+		input: `
 resource "kafka_topic" "topic_with_invalid_cleanup_policy" {
   name               = "topic_with_invalid_cleanup_policy"
   replication_factor = 3
@@ -240,21 +238,23 @@ resource "kafka_topic" "topic_with_invalid_cleanup_policy" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "invalid cleanup.policy: it must be one of [delete, compact], but currently is 'invalid-value'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 6, Column: 26},
-						End:      hcl.Pos{Line: 6, Column: 41},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "invalid cleanup.policy: it must be one of [delete, compact], but currently is 'invalid-value'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 26},
+					End:      hcl.Pos{Line: 6, Column: 41},
 				},
 			},
 		},
-		{
-			name: "no retention on topic with delete policy",
-			input: `
+	},
+}
+
+var deletePolicyRetentionTimeTests = []topicConfigTestCase{
+	{
+		name: "no retention on topic with delete policy",
+		input: `
 resource "kafka_topic" "topic_without_retention" {
   name               = "topic_without_retention"
   replication_factor = 3
@@ -263,7 +263,7 @@ resource "kafka_topic" "topic_without_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_without_retention" {
   name               = "topic_without_retention"
   replication_factor = 3
@@ -273,22 +273,21 @@ resource "kafka_topic" "topic_without_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "retention.ms must be defined on a topic with cleanup policy delete",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 8, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "retention.ms must be defined on a topic with cleanup policy delete",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 8, Column: 4},
 				},
 			},
 		},
-		{
-			// checking that multiple fixes will be inserted correctly as the deletion policy defaults to delete and a retention template should be inserted in this case
-			name: "topic without policy and without retention time",
-			input: `
+	},
+	{
+		// checking that multiple fixes will be inserted correctly as the deletion policy defaults to delete and a retention template should be inserted in this case
+		name: "topic without policy and without retention time",
+		input: `
 resource "kafka_topic" "topic_without_policy_and_retention" {
   name               = "topic_without_policy_and_retention"
   replication_factor = 3
@@ -296,7 +295,7 @@ resource "kafka_topic" "topic_without_policy_and_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_without_policy_and_retention" {
   name               = "topic_without_policy_and_retention"
   replication_factor = 3
@@ -306,30 +305,28 @@ resource "kafka_topic" "topic_without_policy_and_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing cleanup.policy: using default 'delete'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 7, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing cleanup.policy: using default 'delete'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 7, Column: 4},
 				},
-				{
-					Rule:    rule,
-					Message: "retention.ms must be defined on a topic with cleanup policy delete",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 7, Column: 4},
-					},
+			},
+			{
+				Message: "retention.ms must be defined on a topic with cleanup policy delete",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 7, Column: 4},
 				},
 			},
 		},
-		{
-			name: "invalid retention time",
-			input: `
+	},
+	{
+		name: "invalid retention time",
+		input: `
 resource "kafka_topic" "topic_with_invalid_retention" {
   name               = "topic_with_invalid_retention"
   replication_factor = 3
@@ -339,21 +336,23 @@ resource "kafka_topic" "topic_with_invalid_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "retention.ms must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 7, Column: 26},
-						End:      hcl.Pos{Line: 7, Column: 31},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "retention.ms must have a valid integer value expressed in milliseconds. Use -1 for infinite retention",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 26},
+					End:      hcl.Pos{Line: 7, Column: 31},
 				},
 			},
 		},
-		{
-			name: "retention time of 3 days requires tiered storage",
-			input: `
+	},
+}
+
+var deletePolicyTieredStorageTests = []topicConfigTestCase{
+	{
+		name: "retention time of 3 days requires tiered storage",
+		input: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   name               = "topic_with_more_than_3_days_retention"
   replication_factor = 3
@@ -363,7 +362,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   name               = "topic_with_more_than_3_days_retention"
   replication_factor = 3
@@ -376,30 +375,28 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     "compression.type"   = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage must be enabled when retention time is longer than 3 days",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 9, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage must be enabled when retention time is longer than 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
-				{
-					Rule:    rule,
-					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 9, Column: 4},
-					},
+			},
+			{
+				Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
 			},
 		},
-		{
-			name: "infinite retention time requires tiered storage",
-			input: `
+	},
+	{
+		name: "infinite retention time requires tiered storage",
+		input: `
 resource "kafka_topic" "topic_with_infinite_retention" {
   name               = "topic_with_infinite_retention"
   replication_factor = 3
@@ -409,7 +406,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     "compression.type" = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_infinite_retention" {
   name               = "topic_with_infinite_retention"
   replication_factor = 3
@@ -422,30 +419,28 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     "compression.type"   = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage must be enabled when retention time is longer than 3 days",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 9, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage must be enabled when retention time is longer than 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
-				{
-					Rule:    rule,
-					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 9, Column: 4},
-					},
+			},
+			{
+				Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
 			},
 		},
-		{
-			name: "forgot tiered storage enabling",
-			input: `
+	},
+	{
+		name: "forgot tiered storage enabling",
+		input: `
 resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   name               = "topic_with_missing_tiered_storage_enabling"
   replication_factor = 3
@@ -457,7 +452,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
     "compression.type" = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   name               = "topic_with_missing_tiered_storage_enabling"
   replication_factor = 3
@@ -470,21 +465,20 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
     "compression.type"   = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage must be enabled when retention time is longer than 3 days",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 11, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage must be enabled when retention time is longer than 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 11, Column: 4},
 				},
 			},
 		},
-		{
-			name: "tiered storage disabled for retention period bigger than 3 days",
-			input: `
+	},
+	{
+		name: "tiered storage disabled for retention period bigger than 3 days",
+		input: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   name               = "topic_with_more_than_3_days_retention_tiered_disabled"
   replication_factor = 3
@@ -495,7 +489,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "compression.type"      = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   name               = "topic_with_more_than_3_days_retention_tiered_disabled"
   replication_factor = 3
@@ -508,30 +502,28 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "compression.type"      = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage must be enabled when retention time is longer than 3 days",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 6, Column: 31},
-						End:      hcl.Pos{Line: 6, Column: 38},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage must be enabled when retention time is longer than 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 38},
 				},
-				{
-					Rule:    rule,
-					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 10, Column: 4},
-					},
+			},
+			{
+				Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 		},
-		{
-			name: "tiered storage enabled without local retention",
-			input: `
+	},
+	{
+		name: "tiered storage enabled without local retention",
+		input: `
 resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   name               = "topic_with_tiered_storage_missing_local_retention"
   replication_factor = 3
@@ -542,7 +534,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
     "compression.type"      = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   name               = "topic_with_tiered_storage_missing_local_retention"
   replication_factor = 3
@@ -555,21 +547,20 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
     "compression.type"      = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 5, Column: 3},
-						End:      hcl.Pos{Line: 10, Column: 4},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "missing local.retention.ms when tiered storage is enabled: using default '86400000'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 		},
-		{
-			name: "tiered storage enabled and local retention invalid",
-			input: `
+	},
+	{
+		name: "tiered storage enabled and local retention invalid",
+		input: `
 resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
   name               = "topic_with_tiered_storage_local_retention_invalid"
   replication_factor = 3
@@ -581,21 +572,20 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
     "compression.type"      = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "local.retention.ms must have a valid integer value expressed in milliseconds",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 9, Column: 31},
-						End:      hcl.Pos{Line: 9, Column: 44},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "local.retention.ms must have a valid integer value expressed in milliseconds",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 9, Column: 31},
+					End:      hcl.Pos{Line: 9, Column: 44},
 				},
 			},
 		},
-		{
-			name: "tiered storage enabled for less than 3 days retention",
-			input: `
+	},
+	{
+		name: "tiered storage enabled for less than 3 days retention",
+		input: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   name               = "topic_with_less_3_days_retention_with_remote_storage"
   replication_factor = 3
@@ -606,7 +596,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
     "compression.type"      = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   name               = "topic_with_less_3_days_retention_with_remote_storage"
   replication_factor = 3
@@ -617,21 +607,20 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 6, Column: 31},
-						End:      hcl.Pos{Line: 6, Column: 37},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 37},
 				},
 			},
 		},
-		{
-			name: "tiered storage explicitly disabled for less than 3 days retention",
-			input: `
+	},
+	{
+		name: "tiered storage explicitly disabled for less than 3 days retention",
+		input: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_disabled_remote_storage" {
   name               = "topic_with_less_3_days_retention_with_disabled_remote_storage"
   replication_factor = 3
@@ -642,11 +631,11 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_disabled_remote_st
     "compression.type"      = "zstd"
   }
 }`,
-			expected: []*helper.Issue{},
-		},
-		{
-			name: "local storage specified for less than 3 days retention",
-			input: `
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "local storage specified for less than 3 days retention",
+		input: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   name               = "topic_with_less_3_days_retention_with_local_storage"
   replication_factor = 3
@@ -658,7 +647,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
     "compression.type"      = "zstd"
   }
 }`,
-			fixed: `
+		fixed: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   name               = "topic_with_less_3_days_retention_with_local_storage"
   replication_factor = 3
@@ -670,31 +659,31 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
     "compression.type" = "zstd"
   }
 }`,
-			expected: []*helper.Issue{
-				{
-					Rule:    rule,
-					Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 6, Column: 31},
-						End:      hcl.Pos{Line: 6, Column: 37},
-					},
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage is not supported for less than 3 days retention: disabling it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 37},
 				},
-				{
-					Rule:    rule,
-					Message: "defining local.retention.ms is misleading when tiered storage is disabled due to less than 3 days retention: removing it...",
-					Range: hcl.Range{
-						Filename: fileName,
-						Start:    hcl.Pos{Line: 9, Column: 31},
-						End:      hcl.Pos{Line: 9, Column: 41},
-					},
+			},
+			{
+				Message: "defining local.retention.ms is misleading when tiered storage is disabled due to less than 3 days retention: removing it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 9, Column: 31},
+					End:      hcl.Pos{Line: 9, Column: 41},
 				},
 			},
 		},
+	},
+}
 
-		{
-			name: "good topic definition without retention",
-			input: `
+var goodConfigTests = []topicConfigTestCase{
+	{
+		name: "good topic definition without retention",
+		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
   replication_factor = 3
@@ -704,11 +693,11 @@ resource "kafka_topic" "good topic" {
     "retention.ms"     = "86400000"
   }
 }`,
-			expected: []*helper.Issue{},
-		},
-		{
-			name: "good topic definition with retention",
-			input: `
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "good topic definition with retention",
+		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
   replication_factor = 3
@@ -721,13 +710,27 @@ resource "kafka_topic" "good topic" {
     "compression.type"      = "zstd"
   }
 }`,
-			expected: []*helper.Issue{},
-		},
-	} {
+		expected: []*helper.Issue{},
+	},
+}
+
+func Test_MSKTopicConfigRule(t *testing.T) {
+	rule := &MSKTopicConfigRule{}
+
+	var allTests []topicConfigTestCase
+	allTests = append(allTests, replicationFactorTests...)
+	allTests = append(allTests, compressionTypeTests...)
+	allTests = append(allTests, cleanupPolicyTests...)
+	allTests = append(allTests, deletePolicyRetentionTimeTests...)
+	allTests = append(allTests, deletePolicyTieredStorageTests...)
+	allTests = append(allTests, goodConfigTests...)
+
+	for _, tc := range allTests {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
-			helper.AssertIssues(t, tc.expected, runner.Issues)
+
+			helper.AssertIssues(t, setExpectedRule(tc.expected, rule), runner.Issues)
 
 			if tc.fixed != "" {
 				t.Logf("Proposed changes: %s", string(runner.Changes()[fileName]))
@@ -737,4 +740,13 @@ resource "kafka_topic" "good topic" {
 			}
 		})
 	}
+}
+
+func setExpectedRule(expected helper.Issues, rule *MSKTopicConfigRule) helper.Issues {
+	res := make([]*helper.Issue, len(expected))
+	for i, exp := range expected {
+		exp.Rule = rule
+		res[i] = exp
+	}
+	return res
 }
