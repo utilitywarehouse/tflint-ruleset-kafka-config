@@ -680,6 +680,118 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
 	},
 }
 
+var compactPolicyTests = []topicConfigTestCase{
+	{
+		name: "tiered storage specified for compacted topic",
+		input: `
+resource "kafka_topic" "topic_compacted_with_tiered_storage" {
+  name               = "topic_compacted_with_tiered_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "compact"
+    "compression.type"      = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_compacted_with_tiered_storage" {
+  name               = "topic_compacted_with_tiered_storage"
+  replication_factor = 3
+  config = {
+
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage is not supported for compacted topic: disabling it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 37},
+				},
+			},
+		},
+	},
+	{
+		name: "local storage specified for compacted topic",
+		input: `
+resource "kafka_topic" "topic_compacted_with_local_storage" {
+  name               = "topic_compacted_with_local_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "local.retention.ms"    = "86400000"
+    "cleanup.policy"        = "compact"
+    "compression.type"      = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_compacted_with_local_storage" {
+  name               = "topic_compacted_with_local_storage"
+  replication_factor = 3
+  config = {
+
+
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "tiered storage is not supported for compacted topic: disabling it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 37},
+				},
+			},
+			{
+				Message: "defining local.retention.ms is misleading when tiered storage is disabled due to compacted topic: removing it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 31},
+					End:      hcl.Pos{Line: 7, Column: 41},
+				},
+			},
+		},
+	},
+	{
+		name: "retention time specified for compacted topic",
+		input: `
+resource "kafka_topic" "topic_compacted_with_retention_time" {
+  name               = "topic_compacted_with_retention_time"
+  replication_factor = 3
+  config = {
+    "retention.ms"     = "86400000"
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_compacted_with_retention_time" {
+  name               = "topic_compacted_with_retention_time"
+  replication_factor = 3
+  config = {
+
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "defining retention.ms is misleading for compacted topic: removing it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 5},
+					End:      hcl.Pos{Line: 6, Column: 19},
+				},
+			},
+		},
+	},
+}
+
 var goodConfigTests = []topicConfigTestCase{
 	{
 		name: "good topic definition without retention",
@@ -712,6 +824,19 @@ resource "kafka_topic" "good topic" {
 }`,
 		expected: []*helper.Issue{},
 	},
+	{
+		name: "good compacted topic definition",
+		input: `
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
 }
 
 func Test_MSKTopicConfigRule(t *testing.T) {
@@ -723,6 +848,7 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	allTests = append(allTests, cleanupPolicyTests...)
 	allTests = append(allTests, deletePolicyRetentionTimeTests...)
 	allTests = append(allTests, deletePolicyTieredStorageTests...)
+	allTests = append(allTests, compactPolicyTests...)
 	allTests = append(allTests, goodConfigTests...)
 
 	for _, tc := range allTests {
