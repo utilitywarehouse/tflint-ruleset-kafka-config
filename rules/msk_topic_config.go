@@ -74,16 +74,12 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	configAttr, hasConfig := topic.Body.Attributes["config"]
-	if !hasConfig {
-		err := runner.EmitIssue(
-			r,
-			"missing config attribute: the topic configuration must be specified in a config attribute",
-			topic.DefRange,
-		)
-		if err != nil {
-			return fmt.Errorf("emitting issue: missing config block: %w", err)
-		}
+	configAttr, err := r.validateAndGetConfigAttr(runner, topic)
+	if err != nil {
+		return err
+	}
+
+	if configAttr == nil {
 		return nil
 	}
 
@@ -97,19 +93,59 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 		return err
 	}
 
-	cleanupPolicy, err := r.getAndValidateCleanupPolicy(runner, configAttr, configKeyToPairMap)
+	if err = r.validateCleanupPolicyConfig(runner, configAttr, configKeyToPairMap); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateCleanupPolicyConfig(
+	runner tflint.Runner,
+	configAttr *hclext.Attribute,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	cleanupPolicy, err := r.getAndValidateCleanupPolicyValue(runner, configAttr, configKeyToPairMap)
 	if err != nil {
 		return err
 	}
+
 	switch cleanupPolicy {
 	case cleanupPolicyDelete:
 		if err := r.validateRetentionForDeletePolicy(runner, configAttr, configKeyToPairMap); err != nil {
 			return err
 		}
 	case cleanupPolicyCompact:
-		// todo: validate no retention & remote storage for compact
+		reason := "compacted topic"
+		if err := r.validateTieredStorageDisabled(runner, configKeyToPairMap, reason); err != nil {
+			return err
+		}
+		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap, reason); err != nil {
+			return err
+		}
+		if err := r.validateRetentionTimeNotDefined(runner, configKeyToPairMap, reason); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (r *MSKTopicConfigRule) validateAndGetConfigAttr(
+	runner tflint.Runner,
+	topic *hclext.Block,
+) (*hclext.Attribute, error) {
+	configAttr, hasConfig := topic.Body.Attributes["config"]
+	if !hasConfig {
+		err := runner.EmitIssue(
+			r,
+			"missing config attribute: the topic configuration must be specified in a config attribute",
+			topic.DefRange,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("emitting issue: missing config block: %w", err)
+		}
+		return nil, nil
+	}
+	return configAttr, nil
 }
 
 func constructConfigKeyToPairMap(configAttr *hclext.Attribute) (map[string]hcl.KeyValuePair, error) {
@@ -258,7 +294,7 @@ var (
 	cleanupPolicyValidValues = []string{cleanupPolicyDelete, cleanupPolicyCompact}
 )
 
-func (r *MSKTopicConfigRule) getAndValidateCleanupPolicy(
+func (r *MSKTopicConfigRule) getAndValidateCleanupPolicyValue(
 	runner tflint.Runner,
 	config *hclext.Attribute,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
@@ -349,11 +385,12 @@ func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
 			return err
 		}
 	} else {
-		if err := r.validateTieredStorageNotEnabled(runner, configKeyToPairMap); err != nil {
+		reason := fmt.Sprintf("less than %d days retention", tieredStorageThresholdInDays)
+		if err := r.validateTieredStorageDisabled(runner, configKeyToPairMap, reason); err != nil {
 			return err
 		}
 
-		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap); err != nil {
+		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap, reason); err != nil {
 			return err
 		}
 	}
@@ -413,6 +450,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 func (r *MSKTopicConfigRule) validateLocalRetentionNotDefined(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
+	reason string,
 ) error {
 	localRetTimePair, hasLocalRetTimeAttr := configKeyToPairMap[localRetentionTimeAttr]
 	if !hasLocalRetTimeAttr {
@@ -420,9 +458,9 @@ func (r *MSKTopicConfigRule) validateLocalRetentionNotDefined(
 	}
 
 	msg := fmt.Sprintf(
-		"defining %s is misleading when tiered storage is disabled due to less than %d days retention: removing it...",
+		"defining %s is misleading when tiered storage is disabled due to %s: removing it...",
 		localRetentionTimeAttr,
-		tieredStorageThresholdInDays,
+		reason,
 	)
 	err := runner.EmitIssueWithFix(r, msg, localRetTimePair.Value.Range(),
 		func(f tflint.Fixer) error {
@@ -490,9 +528,10 @@ func (r *MSKTopicConfigRule) validateTieredStorageEnabled(
 	return nil
 }
 
-func (r *MSKTopicConfigRule) validateTieredStorageNotEnabled(
+func (r *MSKTopicConfigRule) validateTieredStorageDisabled(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
+	reason string,
 ) error {
 	tieredStoragePair, hasTieredStorageAttr := configKeyToPairMap[tieredStorageEnableAttr]
 
@@ -511,8 +550,8 @@ func (r *MSKTopicConfigRule) validateTieredStorageNotEnabled(
 	}
 
 	msg := fmt.Sprintf(
-		"tiered storage is not supported for less than %d days retention: disabling it...",
-		tieredStorageThresholdInDays,
+		"tiered storage is not supported for %s: disabling it...",
+		reason,
 	)
 	err := runner.EmitIssueWithFix(r, msg, tieredStoragePair.Value.Range(),
 		func(f tflint.Fixer) error {
@@ -572,4 +611,33 @@ func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
 		return nil, nil
 	}
 	return &retTimeIntVal, nil
+}
+
+func (r *MSKTopicConfigRule) validateRetentionTimeNotDefined(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+	reason string,
+) error {
+	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
+	if !hasRetTime {
+		return nil
+	}
+	msg := fmt.Sprintf("defining %s is misleading for %s: removing it...", retentionTimeAttr, reason)
+	keyRange := retTimePair.Key.Range()
+
+	err := runner.EmitIssueWithFix(r, msg, keyRange,
+		func(f tflint.Fixer) error {
+			return f.Remove(
+				hcl.Range{
+					Filename: keyRange.Filename,
+					Start:    keyRange.Start,
+					End:      retTimePair.Value.Range().End,
+				},
+			)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("emitting issue: retention time defined for compacted topic: %w", err)
+	}
+	return nil
 }
