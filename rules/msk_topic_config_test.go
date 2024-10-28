@@ -757,6 +757,39 @@ resource "kafka_topic" "topic_compacted_with_local_storage" {
 			},
 		},
 	},
+	{
+		name: "retention time specified for compacted topic",
+		input: `
+resource "kafka_topic" "topic_compacted_with_retention_time" {
+  name               = "topic_compacted_with_retention_time"
+  replication_factor = 3
+  config = {
+    "retention.ms"     = "86400000"
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_compacted_with_retention_time" {
+  name               = "topic_compacted_with_retention_time"
+  replication_factor = 3
+  config = {
+
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "defining retention.ms is misleading for compacted topic: removing it...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 5},
+					End:      hcl.Pos{Line: 6, Column: 19},
+				},
+			},
+		},
+	},
 }
 
 var goodConfigTests = []topicConfigTestCase{
@@ -787,6 +820,19 @@ resource "kafka_topic" "good topic" {
     "cleanup.policy"        = "delete"
     "retention.ms"          = "2592000000"
     "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "good compacted topic definition",
+		input: `
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{},

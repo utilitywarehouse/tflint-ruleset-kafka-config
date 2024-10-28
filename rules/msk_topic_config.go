@@ -122,7 +122,9 @@ func (r *MSKTopicConfigRule) validateCleanupPolicyConfig(
 		if err := r.validateLocalRetentionNotDefined(runner, configKeyToPairMap, reason); err != nil {
 			return err
 		}
-		// todo: validate no retention for compact
+		if err := r.validateRetentionTimeNotDefined(runner, configKeyToPairMap, reason); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -609,4 +611,33 @@ func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
 		return nil, nil
 	}
 	return &retTimeIntVal, nil
+}
+
+func (r *MSKTopicConfigRule) validateRetentionTimeNotDefined(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+	reason string,
+) error {
+	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
+	if !hasRetTime {
+		return nil
+	}
+	msg := fmt.Sprintf("defining %s is misleading for %s: removing it...", retentionTimeAttr, reason)
+	keyRange := retTimePair.Key.Range()
+
+	err := runner.EmitIssueWithFix(r, msg, keyRange,
+		func(f tflint.Fixer) error {
+			return f.Remove(
+				hcl.Range{
+					Filename: keyRange.Filename,
+					Start:    keyRange.Start,
+					End:      retTimePair.Value.Range().End,
+				},
+			)
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("emitting issue: retention time defined for compacted topic: %w", err)
+	}
+	return nil
 }
