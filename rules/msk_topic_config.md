@@ -14,8 +14,8 @@ When cleanup policy is 'delete':
   See the [AWS docs](https://docs.aws.amazon.com/msk/latest/developerguide/msk-tiered-storage.html#msk-tiered-storage-constraints).
 
 When cleanup policy is 'compact':
-- 'retention.ms' must  not be specified in the config
-- tiered storage must not be enabled
+- 'retention.ms' must  not be specified in the config as it is misleading. It doesn't apply to compacted topics. See [definition](https://docs.confluent.io/platform/current/installation/configuration/topic-configs.html#retention-ms)
+- tiered storage must not be enabled as it is not supported for compacted topics. See [limitations](https://docs.aws.amazon.com/msk/latest/developerguide/msk-tiered-storage.html#msk-tiered-storage-constraints).
 
 ## Example
 
@@ -100,6 +100,17 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     "cleanup.policy"   = "delete"
     "retention.ms"     = "259200001"
     "compression.type" = "zstd"
+  }
+}
+
+# compacted topic with tiered storage enabled
+resource "kafka_topic" "topic_compacted_with_tiered_storage" {
+  name               = "topic_compacted_with_tiered_storage"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "compact"
+    "compression.type"      = "zstd"
   }
 }
 ```
