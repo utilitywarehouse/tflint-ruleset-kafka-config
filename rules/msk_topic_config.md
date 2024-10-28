@@ -13,6 +13,10 @@ When cleanup policy is 'delete':
 - for a retention period less than 3 days, tiered storage must be disabled and the local.retention.ms parameter must not be defined.
   See the [AWS docs](https://docs.aws.amazon.com/msk/latest/developerguide/msk-tiered-storage.html#msk-tiered-storage-constraints).
 
+When cleanup policy is 'compact':
+- 'retention.ms' must  not be specified in the config
+- tiered storage must not be enabled
+
 ## Example
 
 ### Good example
@@ -40,6 +44,16 @@ resource "kafka_topic" "good topic" {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
     "retention.ms"     = "86400000"
+  }
+}
+
+# Good compacted topic
+resource "kafka_topic" "good topic" {
+  name               = "good_topic"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "compact"
+    "compression.type" = "zstd"
   }
 }
 ```
