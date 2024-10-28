@@ -856,7 +856,8 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
 
-			helper.AssertIssues(t, setExpectedRule(tc.expected, rule), runner.Issues)
+			setExpectedRule(tc.expected, rule)
+			helper.AssertIssues(t, tc.expected, runner.Issues)
 
 			if tc.fixed != "" {
 				t.Logf("Proposed changes: %s", string(runner.Changes()[fileName]))
@@ -868,11 +869,8 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	}
 }
 
-func setExpectedRule(expected helper.Issues, rule *MSKTopicConfigRule) helper.Issues {
-	res := make([]*helper.Issue, len(expected))
-	for i, exp := range expected {
+func setExpectedRule(expected helper.Issues, rule *MSKTopicConfigRule) {
+	for _, exp := range expected {
 		exp.Rule = rule
-		res[i] = exp
 	}
-	return res
 }
