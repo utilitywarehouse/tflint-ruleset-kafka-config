@@ -415,7 +415,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    # keep data for infinite days
+    # keep data indefinitely
     "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
@@ -429,7 +429,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    # keep data for infinite days
+    # keep data indefinitely
     "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
@@ -461,7 +461,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    # keep data for 1 day
+    # keep data for 3 days
     "retention.ms" = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
@@ -475,7 +475,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    # keep data for 1 day
+    # keep data for 3 days
     "retention.ms" = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
@@ -502,7 +502,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    # keep data for 1 day
+    # keep data for 3 days
     "retention.ms"     = "259200001"
     "compression.type" = "zstd"
   }
@@ -516,7 +516,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    # keep data for 1 day
+    # keep data for 3 days
     "retention.ms"     = "259200001"
     "compression.type" = "zstd"
   }
@@ -854,6 +854,58 @@ resource "kafka_topic" "topic_without_retention_comment" {
 				},
 			},
 		},
+	},
+	{
+		name: "retention time with wrong comment",
+		input: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    # keep data for 1 day
+    "retention.ms"     = "172800000"
+    "compression.type" = "zstd"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    "cleanup.policy" = "delete"
+    # keep data for 2 days
+    "retention.ms"     = "172800000"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.ms value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 5},
+					End:      hcl.Pos{Line: 8, Column: 1},
+				},
+			},
+		},
+	},
+	{
+		name: "retention time good infinite comment",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_infinite" {
+  name               = "topic_good_retention_comment_infinite"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    # keep data indefinitely
+    "retention.ms"          = "-1"
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
 	},
 }
 

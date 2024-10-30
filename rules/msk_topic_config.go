@@ -655,7 +655,7 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 		return nil
 	}
 
-	msg, err := buildDurationComment(retTimePair)
+	msg, err := buildDurationComment(retTimePair, "-1")
 	if err != nil {
 		return err
 	}
@@ -675,6 +675,25 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 			retTimePair.Key.Range(),
 			func(f tflint.Fixer) error {
 				return f.InsertTextBefore(retTimePair.Key.Range(), msg+"\n")
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
+		}
+		return nil
+	}
+
+	commentTxt := strings.TrimSpace(string(comment.Bytes))
+	if commentTxt != msg {
+		err := runner.EmitIssueWithFix(
+			r,
+			fmt.Sprintf(
+				"%s value doesn't correspond to the human readable value in the comment: fixing it ...",
+				retentionTimeAttr,
+			),
+			comment.Range,
+			func(f tflint.Fixer) error {
+				return f.ReplaceText(comment.Range, msg+"\n")
 			},
 		)
 		if err != nil {
@@ -721,14 +740,20 @@ func getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens
 	return slices.DeleteFunc(tokens, isNotCommentFunc), nil
 }
 
-func buildDurationComment(retTimePair hcl.KeyValuePair) (string, error) {
+func buildDurationComment(retTimePair hcl.KeyValuePair, infiniteVal string) (string, error) {
 	var retTimeVal string
 	diags := gohcl.DecodeExpression(retTimePair.Value, nil, &retTimeVal)
 	if diags.HasErrors() {
 		return "", diags
 	}
+	baseMsg := "keep data"
+
+	if retTimeVal == infiniteVal {
+		return fmt.Sprintf("# %s indefinitely", baseMsg), nil
+	}
 
 	retTimeIntVal, err := strconv.Atoi(retTimeVal)
+	// todo: check what we should do here
 	if err != nil {
 		//nolint:nilerr
 		return "", nil
@@ -740,6 +765,6 @@ func buildDurationComment(retTimePair hcl.KeyValuePair) (string, error) {
 		unit = "day"
 	}
 
-	msg := fmt.Sprintf("# keep data for %d %s", timeInDays, unit)
+	msg := fmt.Sprintf("# %s for %d %s", baseMsg, timeInDays, unit)
 	return msg, nil
 }
