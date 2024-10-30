@@ -415,7 +415,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    # keep data indefinitely
+    # keep data forever
     "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
@@ -429,7 +429,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    # keep data indefinitely
+    # keep data forever
     "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
@@ -900,7 +900,7 @@ resource "kafka_topic" "topic_good_retention_comment_infinite" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    # keep data indefinitely
+    # keep data forever
     "retention.ms"          = "-1"
     "compression.type"      = "zstd"
   }

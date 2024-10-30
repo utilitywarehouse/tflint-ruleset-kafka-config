@@ -749,7 +749,7 @@ func buildDurationComment(retTimePair hcl.KeyValuePair, infiniteVal string) (str
 	baseMsg := "keep data"
 
 	if retTimeVal == infiniteVal {
-		return fmt.Sprintf("# %s indefinitely", baseMsg), nil
+		return fmt.Sprintf("# %s forever", baseMsg), nil
 	}
 
 	retTimeIntVal, err := strconv.Atoi(retTimeVal)
