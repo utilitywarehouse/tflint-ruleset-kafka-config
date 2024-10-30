@@ -26,7 +26,8 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -49,7 +50,8 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		fixed: `
@@ -59,7 +61,8 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -82,7 +85,8 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		fixed: `
@@ -92,7 +96,8 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -135,7 +140,8 @@ resource "kafka_topic" "topic_without_compression_type" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		fixed: `
@@ -145,7 +151,8 @@ resource "kafka_topic" "topic_without_compression_type" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -154,7 +161,7 @@ resource "kafka_topic" "topic_without_compression_type" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 8, Column: 4},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
 			},
 		},
@@ -168,7 +175,8 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "gzip"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		fixed: `
@@ -178,7 +186,8 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -203,7 +212,8 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		fixed: `
@@ -213,7 +223,8 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000"
+    # keep data for 1 day
+    "retention.ms" = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -222,7 +233,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 8, Column: 4},
+					End:      hcl.Pos{Line: 9, Column: 4},
 				},
 			},
 		},
@@ -358,6 +369,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
+    # keep data for 3 days
     "retention.ms"     = "259200000"
     "compression.type" = "zstd"
   }
@@ -371,8 +383,9 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200000"
-    "compression.type"   = "zstd"
+    # keep data for 3 days
+    "retention.ms"     = "259200000"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -381,7 +394,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 9, Column: 4},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 			{
@@ -389,7 +402,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 9, Column: 4},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 		},
@@ -402,6 +415,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
+    # keep data for infinite days
     "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
@@ -415,8 +429,9 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "-1"
-    "compression.type"   = "zstd"
+    # keep data for infinite days
+    "retention.ms"     = "-1"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -425,7 +440,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 9, Column: 4},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 			{
@@ -433,7 +448,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 9, Column: 4},
+					End:      hcl.Pos{Line: 10, Column: 4},
 				},
 			},
 		},
@@ -446,7 +461,8 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "259200001"
+    # keep data for 1 day
+    "retention.ms" = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type" = "zstd"
@@ -459,7 +475,8 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
+    # keep data for 1 day
+    "retention.ms" = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type"   = "zstd"
@@ -471,7 +488,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 11, Column: 4},
+					End:      hcl.Pos{Line: 12, Column: 4},
 				},
 			},
 		},
@@ -485,8 +502,9 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
-    "compression.type"      = "zstd"
+    # keep data for 1 day
+    "retention.ms"     = "259200001"
+    "compression.type" = "zstd"
   }
 }`,
 		fixed: `
@@ -498,8 +516,9 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
-    "compression.type"      = "zstd"
+    # keep data for 1 day
+    "retention.ms"     = "259200001"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -516,7 +535,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 10, Column: 4},
+					End:      hcl.Pos{Line: 11, Column: 4},
 				},
 			},
 		},
@@ -530,8 +549,9 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
-    "compression.type"      = "zstd"
+    # keep data for 3 days
+    "retention.ms"     = "259200001"
+    "compression.type" = "zstd"
   }
 }`,
 		fixed: `
@@ -543,8 +563,9 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
-    "compression.type"      = "zstd"
+    # keep data for 3 days
+    "retention.ms"     = "259200001"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -553,7 +574,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
 				Range: hcl.Range{
 					Filename: fileName,
 					Start:    hcl.Pos{Line: 5, Column: 3},
-					End:      hcl.Pos{Line: 10, Column: 4},
+					End:      hcl.Pos{Line: 11, Column: 4},
 				},
 			},
 		},
@@ -567,9 +588,10 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001"
-    "local.retention.ms"    = "invalid-val"
-    "compression.type"      = "zstd"
+    # keep data for 3 days
+    "retention.ms"       = "259200001"
+    "local.retention.ms" = "invalid-val"
+    "compression.type"   = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -577,8 +599,8 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
 				Message: "local.retention.ms must have a valid integer value expressed in milliseconds",
 				Range: hcl.Range{
 					Filename: fileName,
-					Start:    hcl.Pos{Line: 9, Column: 31},
-					End:      hcl.Pos{Line: 9, Column: 44},
+					Start:    hcl.Pos{Line: 10, Column: 28},
+					End:      hcl.Pos{Line: 10, Column: 41},
 				},
 			},
 		},
@@ -592,8 +614,9 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "86400000"
-    "compression.type"      = "zstd"
+    # keep data for 1 day
+    "retention.ms"     = "86400000"
+    "compression.type" = "zstd"
   }
 }`,
 		fixed: `
@@ -602,7 +625,8 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   replication_factor = 3
   config = {
 
-    "cleanup.policy"   = "delete"
+    "cleanup.policy" = "delete"
+    # keep data for 1 day
     "retention.ms"     = "86400000"
     "compression.type" = "zstd"
   }
@@ -627,8 +651,9 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_disabled_remote_st
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "86400000"
-    "compression.type"      = "zstd"
+    # keep data for 1 day
+    "retention.ms"     = "86400000"
+    "compression.type" = "zstd"
   }
 }`,
 		expected: []*helper.Issue{},
@@ -642,6 +667,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
+    # keep data for 2 days
     "retention.ms"          = "172800000"
     "local.retention.ms"    = "86400000"
     "compression.type"      = "zstd"
@@ -654,7 +680,8 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   config = {
 
     "cleanup.policy" = "delete"
-    "retention.ms"   = "172800000"
+    # keep data for 2 days
+    "retention.ms" = "172800000"
 
     "compression.type" = "zstd"
   }
@@ -672,8 +699,8 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
 				Message: "defining local.retention.ms is misleading when tiered storage is disabled due to less than 3 days retention: removing it...",
 				Range: hcl.Range{
 					Filename: fileName,
-					Start:    hcl.Pos{Line: 9, Column: 31},
-					End:      hcl.Pos{Line: 9, Column: 41},
+					Start:    hcl.Pos{Line: 10, Column: 31},
+					End:      hcl.Pos{Line: 10, Column: 41},
 				},
 			},
 		},
@@ -764,6 +791,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
   name               = "topic_compacted_with_retention_time"
   replication_factor = 3
   config = {
+    # keep data for 1 day
     "retention.ms"     = "86400000"
     "cleanup.policy"   = "compact"
     "compression.type" = "zstd"
@@ -774,6 +802,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
   name               = "topic_compacted_with_retention_time"
   replication_factor = 3
   config = {
+    # keep data for 1 day
 
     "cleanup.policy"   = "compact"
     "compression.type" = "zstd"
@@ -784,8 +813,44 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
 				Message: "defining retention.ms is misleading for compacted topic: removing it...",
 				Range: hcl.Range{
 					Filename: fileName,
-					Start:    hcl.Pos{Line: 6, Column: 5},
-					End:      hcl.Pos{Line: 6, Column: 19},
+					Start:    hcl.Pos{Line: 7, Column: 5},
+					End:      hcl.Pos{Line: 7, Column: 19},
+				},
+			},
+		},
+	},
+}
+
+var configValueCommentsTests = []topicConfigTestCase{
+	{
+		name: "retention time without comment",
+		input: `
+resource "kafka_topic" "topic_without_retention_comment" {
+  name               = "topic_without_retention_comment"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000"
+    "compression.type" = "zstd"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_without_retention_comment" {
+  name               = "topic_without_retention_comment"
+  replication_factor = 3
+  config = {
+    "cleanup.policy" = "delete"
+    # keep data for 1 day
+    "retention.ms"     = "86400000"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.ms must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 7, Column: 5},
+					End:      hcl.Pos{Line: 7, Column: 19},
 				},
 			},
 		},
@@ -794,7 +859,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
 
 var goodConfigTests = []topicConfigTestCase{
 	{
-		name: "good topic definition without retention",
+		name: "good topic definition without tiered storage",
 		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
@@ -802,13 +867,14 @@ resource "kafka_topic" "good topic" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
+    # keep data for 1 day
     "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{},
 	},
 	{
-		name: "good topic definition with retention",
+		name: "good topic definition with tiered storage",
 		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
@@ -818,6 +884,7 @@ resource "kafka_topic" "good topic" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
+    # keep data for 30 days
     "retention.ms"          = "2592000000"
     "compression.type"      = "zstd"
   }
@@ -849,6 +916,7 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	allTests = append(allTests, deletePolicyRetentionTimeTests...)
 	allTests = append(allTests, deletePolicyTieredStorageTests...)
 	allTests = append(allTests, compactPolicyTests...)
+	allTests = append(allTests, configValueCommentsTests...)
 	allTests = append(allTests, goodConfigTests...)
 
 	for _, tc := range allTests {

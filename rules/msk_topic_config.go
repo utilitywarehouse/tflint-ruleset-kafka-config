@@ -96,6 +96,10 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 	if err = r.validateCleanupPolicyConfig(runner, configAttr, configKeyToPairMap); err != nil {
 		return err
 	}
+
+	if err = r.validateConfigValuesInComments(runner, configKeyToPairMap); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -640,4 +644,102 @@ func (r *MSKTopicConfigRule) validateRetentionTimeNotDefined(
 		return fmt.Errorf("emitting issue: retention time defined for compacted topic: %w", err)
 	}
 	return nil
+}
+
+func (r *MSKTopicConfigRule) validateConfigValuesInComments(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
+	if !hasRetTime {
+		return nil
+	}
+
+	msg, err := buildDurationComment(retTimePair)
+	if err != nil {
+		return err
+	}
+	if msg == "" {
+		return nil
+	}
+
+	comment, err := r.getExistingComment(runner, retTimePair)
+	if err != nil {
+		return err
+	}
+
+	if comment == nil {
+		err := runner.EmitIssueWithFix(
+			r,
+			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", retentionTimeAttr),
+			retTimePair.Key.Range(),
+			func(f tflint.Fixer) error {
+				return f.InsertTextBefore(retTimePair.Key.Range(), msg+"\n")
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.KeyValuePair) (*hclsyntax.Token, error) {
+	comments, err := getCommentsForFile(runner, pair.Key.Range().Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// todo: check to use binary search
+	idx := slices.IndexFunc(comments, func(comment hclsyntax.Token) bool {
+		return comment.Range.End.Line == pair.Key.Range().Start.Line
+	})
+
+	if idx >= 0 {
+		return &comments[idx], nil
+	}
+	return nil, nil
+}
+
+func getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens, error) {
+	// todo: optimise this, as we're reading the file for each topic
+	file, err := runner.GetFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("getting hcl file %s for reading comments: %w", filename, err)
+	}
+
+	tokens, diags := hclsyntax.LexConfig(file.Bytes, filename, hcl.InitialPos)
+	if diags != nil {
+		return nil, diags
+	}
+
+	isNotCommentFunc := func(token hclsyntax.Token) bool {
+		return token.Type != hclsyntax.TokenComment
+	}
+
+	return slices.DeleteFunc(tokens, isNotCommentFunc), nil
+}
+
+func buildDurationComment(retTimePair hcl.KeyValuePair) (string, error) {
+	var retTimeVal string
+	diags := gohcl.DecodeExpression(retTimePair.Value, nil, &retTimeVal)
+	if diags.HasErrors() {
+		return "", diags
+	}
+
+	retTimeIntVal, err := strconv.Atoi(retTimeVal)
+	if err != nil {
+		//nolint:nilerr
+		return "", nil
+	}
+	timeInDays := retTimeIntVal / millisInOneDay
+
+	unit := "days"
+	if timeInDays == 1 {
+		unit = "day"
+	}
+
+	msg := fmt.Sprintf("# keep data for %d %s", timeInDays, unit)
+	return msg, nil
 }
