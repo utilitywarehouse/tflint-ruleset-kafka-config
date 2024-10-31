@@ -14,21 +14,15 @@ var configValueCommentsTests = []topicConfigTestCase{
 		name: "retention time without comment",
 		input: `
 resource "kafka_topic" "topic_without_retention_comment" {
-  name               = "topic_without_retention_comment"
-  replication_factor = 3
+  name = "topic_without_retention_comment"
   config = {
-    "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000"
-    "compression.type" = "zstd"
+    "retention.ms" = "86400000"
   }
 }`, fixed: `
 resource "kafka_topic" "topic_without_retention_comment" {
-  name               = "topic_without_retention_comment"
-  replication_factor = 3
+  name = "topic_without_retention_comment"
   config = {
-    "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
-    "compression.type" = "zstd"
+    "retention.ms" = "86400000" # keep data for 1 day
   }
 }`,
 		expected: []*helper.Issue{
@@ -36,8 +30,8 @@ resource "kafka_topic" "topic_without_retention_comment" {
 				Message: "retention.ms must have a comment with the human readable value: adding it ...",
 				Range: hcl.Range{
 					Filename: fileName,
-					Start:    hcl.Pos{Line: 7, Column: 5},
-					End:      hcl.Pos{Line: 7, Column: 19},
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 19},
 				},
 			},
 		},
@@ -49,20 +43,16 @@ resource "kafka_topic" "topic_wrong_retention_comment" {
   name               = "topic_wrong_retention_comment"
   replication_factor = 3
   config = {
-    "cleanup.policy"   = "delete"
     # keep data for 1 day
-    "retention.ms"     = "172800000"
-    "compression.type" = "zstd"
+    "retention.ms" = "172800000"
   }
 }`, fixed: `
 resource "kafka_topic" "topic_wrong_retention_comment" {
   name               = "topic_wrong_retention_comment"
   replication_factor = 3
   config = {
-    "cleanup.policy" = "delete"
     # keep data for 2 days
-    "retention.ms"     = "172800000"
-    "compression.type" = "zstd"
+    "retention.ms" = "172800000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -70,8 +60,8 @@ resource "kafka_topic" "topic_wrong_retention_comment" {
 				Message: "retention.ms value doesn't correspond to the human readable value in the comment: fixing it ...",
 				Range: hcl.Range{
 					Filename: fileName,
-					Start:    hcl.Pos{Line: 7, Column: 5},
-					End:      hcl.Pos{Line: 8, Column: 1},
+					Start:    hcl.Pos{Line: 6, Column: 5},
+					End:      hcl.Pos{Line: 7, Column: 1},
 				},
 			},
 		},
@@ -83,13 +73,8 @@ resource "kafka_topic" "topic_good_retention_comment_infinite" {
   name               = "topic_good_retention_comment_infinite"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
-    "local.retention.ms"    = "86400000"
-    "remote.storage.enable" = "true"
-    "cleanup.policy"        = "delete"
     # keep data forever
-    "retention.ms"          = "-1"
-    "compression.type"      = "zstd"
+    "retention.ms" = "-1"
   }
 }`,
 		expected: []*helper.Issue{},
@@ -101,12 +86,7 @@ resource "kafka_topic" "topic_good_retention_comment_months" {
   name               = "topic_good_retention_comment_months"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
-    "local.retention.ms"    = "86400000"
-    "remote.storage.enable" = "true"
-    "cleanup.policy"        = "delete"
-    "retention.ms"          = "5184000000" # keep data for 2 months 
-    "compression.type"      = "zstd"
+    "retention.ms" = "5184000000" # keep data for 2 months 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -118,12 +98,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
-    "local.retention.ms"    = "86400000"
-    "remote.storage.enable" = "true"
-    "cleanup.policy"        = "delete"
-    "retention.ms"          = "31536000000" # keep data for 1 year 
-    "compression.type"      = "zstd"
+    "retention.ms" = "31536000000" # keep data for 1 year 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -135,9 +110,7 @@ resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
   name               = "topic_good_retention_comment_less_than_a_day"
   replication_factor = 3
   config = {
-    "cleanup.policy"   = "delete"
-    "retention.ms"     = "21600000" # keep data for 6 hours
-    "compression.type" = "zstd"
+    "retention.ms" = "21600000" # keep data for 6 hours
   }
 }`,
 		expected: []*helper.Issue{},

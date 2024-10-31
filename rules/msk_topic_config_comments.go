@@ -107,12 +107,12 @@ var configTimeValueCommentInfos = []configTimeValueCommentInfo{
 		baseComment:      "keep data",
 		issueWhenInvalid: false,
 	},
-	//{
-	//	key:              localRetentionTimeAttr,
-	//	infiniteValue:    "-2",
-	//	baseComment:      "keep data in primary storage",
-	//	issueWhenInvalid: false,
-	// },
+	{
+		key:              localRetentionTimeAttr,
+		infiniteValue:    "-2",
+		baseComment:      "keep data in primary storage",
+		issueWhenInvalid: false,
+	},
 }
 
 func (r *MSKTopicConfigCommentsRule) validateConfigValuesInComments(
