@@ -96,7 +96,6 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 	if err = r.validateCleanupPolicyConfig(runner, configAttr, configKeyToPairMap); err != nil {
 		return err
 	}
-
 	return nil
 }
 
