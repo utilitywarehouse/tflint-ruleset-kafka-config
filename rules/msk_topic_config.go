@@ -657,12 +657,30 @@ func (r *MSKTopicConfigRule) validateRetentionTimeNotDefined(
 	return nil
 }
 
+type configTimeValueCommentInfo struct {
+	key              string
+	infiniteValue    string
+	baseComment      string
+	issueWhenInvalid bool
+}
+
+var configTimeValueCommentInfos = []configTimeValueCommentInfo{
+	{
+		key:              retentionTimeAttr,
+		infiniteValue:    "-1",
+		baseComment:      "keep data",
+		issueWhenInvalid: false,
+	},
+}
+
 func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
-	if err := r.validateTimeConfigValue(runner, configKeyToPairMap, retentionTimeAttr, "-1", "keep data"); err != nil {
-		return err
+	for _, configValueInfo := range configTimeValueCommentInfos {
+		if err := r.validateTimeConfigValue(runner, configKeyToPairMap, configValueInfo); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -671,16 +689,14 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 func (r *MSKTopicConfigRule) validateTimeConfigValue(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
-	attr string,
-	infiniteVal string,
-	baseMsg string,
+	configValueInfo configTimeValueCommentInfo,
 ) error {
-	timePair, hasConfig := configKeyToPairMap[attr]
+	timePair, hasConfig := configKeyToPairMap[configValueInfo.key]
 	if !hasConfig {
 		return nil
 	}
 
-	msg, err := buildDurationComment(timePair, infiniteVal, baseMsg)
+	msg, err := buildDurationComment(timePair, configValueInfo)
 	if err != nil {
 		return err
 	}
@@ -696,14 +712,14 @@ func (r *MSKTopicConfigRule) validateTimeConfigValue(
 	if comment == nil {
 		err := runner.EmitIssueWithFix(
 			r,
-			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", attr),
+			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", configValueInfo.key),
 			timePair.Key.Range(),
 			func(f tflint.Fixer) error {
 				return f.InsertTextAfter(timePair.Value.Range(), msg)
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
+			return fmt.Errorf("emitting issue: no comment for time value: %w", err)
 		}
 		return nil
 	}
@@ -712,7 +728,7 @@ func (r *MSKTopicConfigRule) validateTimeConfigValue(
 	if commentTxt != msg {
 		issueMsg := fmt.Sprintf(
 			"%s value doesn't correspond to the human readable value in the comment: fixing it ...",
-			attr,
+			configValueInfo.key,
 		)
 		err := runner.EmitIssueWithFix(r, issueMsg, comment.Range,
 			func(f tflint.Fixer) error {
@@ -720,7 +736,7 @@ func (r *MSKTopicConfigRule) validateTimeConfigValue(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
+			return fmt.Errorf("emitting issue: wrong comment for time value: %w", err)
 		}
 	}
 	return nil
@@ -782,15 +798,15 @@ func isNotComment(token hclsyntax.Token) bool {
 	return token.Type != hclsyntax.TokenComment
 }
 
-func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string, baseMsg string) (string, error) {
+func buildDurationComment(timePair hcl.KeyValuePair, configValueInfo configTimeValueCommentInfo) (string, error) {
 	var timeVal string
 	diags := gohcl.DecodeExpression(timePair.Value, nil, &timeVal)
 	if diags.HasErrors() {
 		return "", diags
 	}
 
-	if timeVal == infiniteVal {
-		return fmt.Sprintf("# %s forever", baseMsg), nil
+	if timeVal == configValueInfo.infiniteValue {
+		return fmt.Sprintf("# %s forever", configValueInfo.baseComment), nil
 	}
 
 	timeMillis, err := strconv.Atoi(timeVal)
@@ -802,7 +818,7 @@ func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string, baseMsg
 
 	timeUnits, unit := determineTimeUnits(timeMillis)
 
-	msg := fmt.Sprintf("# %s for %d %s", baseMsg, timeUnits, unit)
+	msg := fmt.Sprintf("# %s for %d %s", configValueInfo.baseComment, timeUnits, unit)
 	return msg, nil
 }
 
