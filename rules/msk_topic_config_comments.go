@@ -17,14 +17,6 @@ import (
 // MSKTopicConfigCommentsRule checks comments on time and bytes values.
 type MSKTopicConfigCommentsRule struct {
 	tflint.DefaultRule
-
-	commentsPerFile map[string]hclsyntax.Tokens
-}
-
-func NewMSKTopicConfigCommentsRule() *MSKTopicConfigCommentsRule {
-	return &MSKTopicConfigCommentsRule{
-		commentsPerFile: make(map[string]hclsyntax.Tokens),
-	}
 }
 
 func (r *MSKTopicConfigCommentsRule) Name() string {
@@ -223,10 +215,7 @@ func (r *MSKTopicConfigCommentsRule) getCommentsForFile(
 	runner tflint.Runner,
 	filename string,
 ) (hclsyntax.Tokens, error) {
-	cachedComments, hasCachedComments := r.commentsPerFile[filename]
-	if hasCachedComments {
-		return cachedComments, nil
-	}
+	// we need to parse the file every time, otherwise keeping a cache per file doesn't work
 	file, err := runner.GetFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("getting hcl file %s for reading comments: %w", filename, err)
@@ -237,9 +226,7 @@ func (r *MSKTopicConfigCommentsRule) getCommentsForFile(
 		return nil, diags
 	}
 
-	comments := slices.DeleteFunc(tokens, isNotComment)
-	r.commentsPerFile[filename] = comments
-	return comments, nil
+	return slices.DeleteFunc(tokens, isNotComment), nil
 }
 
 func isNotComment(token hclsyntax.Token) bool {

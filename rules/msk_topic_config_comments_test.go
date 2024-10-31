@@ -200,9 +200,9 @@ resource "kafka_topic" "topic_def" {
 }
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
+	rule := &MSKTopicConfigCommentsRule{}
 	for _, tc := range configValueCommentsTests {
 		t.Run(tc.name, func(t *testing.T) {
-			rule := NewMSKTopicConfigCommentsRule()
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
 
