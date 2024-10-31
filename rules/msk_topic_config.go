@@ -675,7 +675,7 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", retentionTimeAttr),
 			retTimePair.Key.Range(),
 			func(f tflint.Fixer) error {
-				return f.InsertTextBefore(retTimePair.Key.Range(), msg+"\n")
+				return f.InsertTextAfter(retTimePair.Value.Range(), msg)
 			},
 		)
 		if err != nil {
@@ -712,13 +712,29 @@ func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.K
 	}
 
 	// todo: check to use binary search
-	idx := slices.IndexFunc(comments, func(comment hclsyntax.Token) bool {
-		return comment.Range.End.Line == pair.Key.Range().Start.Line
+	// first look for the comment on the same line, after the property definition.
+	// Example: "retention.ms" = "2629800000" # keep data for 30 days
+	afterPropertyIdx := slices.IndexFunc(comments, func(comment hclsyntax.Token) bool {
+		return comment.Range.Start.Line == pair.Key.Range().Start.Line &&
+			comment.Range.Start.Column > pair.Value.Range().End.Column
 	})
 
-	if idx >= 0 {
-		return &comments[idx], nil
+	if afterPropertyIdx >= 0 {
+		return &comments[afterPropertyIdx], nil
 	}
+
+	/* second, look for the comment on the previous line, before the property definition. Example:
+	# keep data for 30 days
+	"retention.ms" = "2629800000"
+	*/
+	beforePropertyIdx := slices.IndexFunc(comments, func(comment hclsyntax.Token) bool {
+		return comment.Range.Start.Line == pair.Key.Range().Start.Line-1 &&
+			comment.Range.End.Line == pair.Key.Range().Start.Line
+	})
+	if beforePropertyIdx >= 0 {
+		return &comments[beforePropertyIdx], nil
+	}
+
 	return nil, nil
 }
 

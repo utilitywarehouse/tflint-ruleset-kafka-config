@@ -838,9 +838,8 @@ resource "kafka_topic" "topic_without_retention_comment" {
   name               = "topic_without_retention_comment"
   replication_factor = 3
   config = {
-    "cleanup.policy" = "delete"
-    # keep data for 1 day
-    "retention.ms"     = "86400000"
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "86400000" # keep data for 1 day
     "compression.type" = "zstd"
   }
 }`,
@@ -914,9 +913,8 @@ resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
   name               = "topic_good_retention_comment_less_than_a_day"
   replication_factor = 3
   config = {
-    "cleanup.policy" = "delete"
-    # keep data for 6 hours
-    "retention.ms"     = "21600000"
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "21600000" # keep data for 6 hours
     "compression.type" = "zstd"
   }
 }`,
