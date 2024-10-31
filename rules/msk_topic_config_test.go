@@ -895,10 +895,10 @@ resource "kafka_topic" "topic_good_retention_comment_months" {
 		expected: []*helper.Issue{},
 	},
 	{
-		name: "retention time in months",
+		name: "retention time in years",
 		input: `
-resource "kafka_topic" "topic_good_retention_comment_months" {
-  name               = "topic_good_retention_comment_months"
+resource "kafka_topic" "topic_good_retention_comment_years" {
+  name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
     # keep data in hot storage for 1 day
@@ -924,6 +924,80 @@ resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
   }
 }`,
 		expected: []*helper.Issue{},
+	},
+	{
+		// checking that multiple insertions won't affect comments positions
+		name: "multiple insertions don't affect comments",
+		input: `
+resource "kafka_topic" "topic_without_policy_and_retention" {
+  name               = "topic_without_policy_and_retention"
+  replication_factor = 3
+  config = {
+    "compression.type" = "zstd"
+  }
+}
+
+resource "kafka_topic" "topic_outdated_retention_comment_years" {
+  name               = "topic_outdated_retention_comment_years"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "63072000000" # keep data for 1 year 
+    "compression.type"      = "zstd"
+  }
+}`,
+		fixed: `
+resource "kafka_topic" "topic_without_policy_and_retention" {
+  name               = "topic_without_policy_and_retention"
+  replication_factor = 3
+  config = {
+    "cleanup.policy"   = "delete"
+    "retention.ms"     = "???"
+    "compression.type" = "zstd"
+  }
+}
+
+resource "kafka_topic" "topic_outdated_retention_comment_years" {
+  name               = "topic_outdated_retention_comment_years"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "63072000000" # keep data for 2 years
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "missing cleanup.policy: using default 'delete'",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 7, Column: 4},
+				},
+			},
+			{
+				Message: "retention.ms must be defined on a topic with cleanup policy delete",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 3},
+					End:      hcl.Pos{Line: 7, Column: 4},
+				},
+			},
+			{
+				Message: "retention.ms value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 18, Column: 45},
+					End:      hcl.Pos{Line: 19, Column: 1},
+				},
+			},
+		},
 	},
 }
 
@@ -977,8 +1051,6 @@ resource "kafka_topic" "good topic" {
 }
 
 func Test_MSKTopicConfigRule(t *testing.T) {
-	rule := &MSKTopicConfigRule{}
-
 	var allTests []topicConfigTestCase
 	allTests = append(allTests, replicationFactorTests...)
 	allTests = append(allTests, compressionTypeTests...)
@@ -991,6 +1063,7 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 
 	for _, tc := range allTests {
 		t.Run(tc.name, func(t *testing.T) {
+			rule := NewMSKTopicConfigRule()
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
 

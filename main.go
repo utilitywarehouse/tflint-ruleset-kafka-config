@@ -19,7 +19,7 @@ func main() {
 				&rules.MSKModuleBackendRule{},
 				&rules.MSKAppTopicsRule{},
 				&rules.MSKTopicNameRule{},
-				&rules.MSKTopicConfigRule{},
+				rules.NewMSKTopicConfigRule(),
 				&rules.MSKUniqueAppNamesRule{},
 			},
 		},

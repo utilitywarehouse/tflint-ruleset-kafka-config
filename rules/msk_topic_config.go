@@ -17,6 +17,14 @@ import (
 // MSKTopicConfigRule checks the configuration for an MSK topic.
 type MSKTopicConfigRule struct {
 	tflint.DefaultRule
+
+	commentsPerFile map[string]hclsyntax.Tokens
+}
+
+func NewMSKTopicConfigRule() *MSKTopicConfigRule {
+	return &MSKTopicConfigRule{
+		commentsPerFile: make(map[string]hclsyntax.Tokens),
+	}
 }
 
 func (r *MSKTopicConfigRule) Name() string {
@@ -741,7 +749,10 @@ func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.K
 }
 
 func (r *MSKTopicConfigRule) getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens, error) {
-	// todo: optimise this, as we're reading the file for each topic
+	cachedComments, hasCachedComments := r.commentsPerFile[filename]
+	if hasCachedComments {
+		return cachedComments, nil
+	}
 	file, err := runner.GetFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("getting hcl file %s for reading comments: %w", filename, err)
@@ -752,7 +763,9 @@ func (r *MSKTopicConfigRule) getCommentsForFile(runner tflint.Runner, filename s
 		return nil, diags
 	}
 
-	return slices.DeleteFunc(tokens, isNotComment), nil
+	comments := slices.DeleteFunc(tokens, isNotComment)
+	r.commentsPerFile[filename] = comments
+	return comments, nil
 }
 
 func isNotComment(token hclsyntax.Token) bool {
