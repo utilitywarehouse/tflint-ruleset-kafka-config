@@ -115,6 +115,62 @@ resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
 }`,
 		expected: []*helper.Issue{},
 	},
+	{
+		name: "local retention time without comment",
+		input: `
+resource "kafka_topic" "topic_without_retention_comment" {
+  name = "topic_without_retention_comment"
+  config = {
+    "local.retention.ms" = "86400000"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_without_retention_comment" {
+  name = "topic_without_retention_comment"
+  config = {
+    "local.retention.ms" = "86400000" # keep data in primary storage for 1 day
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "local.retention.ms must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 25},
+				},
+			},
+		},
+	},
+	{
+		name: "local retention time with wrong comment",
+		input: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    # keep data in primary storage for 1 day
+    "local.retention.ms" = "172800000"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    # keep data in primary storage for 2 days
+    "local.retention.ms" = "172800000"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "local.retention.ms value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 5},
+					End:      hcl.Pos{Line: 7, Column: 1},
+				},
+			},
+		},
+	},
 }
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
