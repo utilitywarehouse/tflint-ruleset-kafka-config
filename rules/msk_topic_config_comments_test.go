@@ -149,15 +149,15 @@ resource "kafka_topic" "topic_wrong_retention_comment" {
   replication_factor = 3
   config = {
     # keep data in primary storage for 1 day
-    "local.retention.ms" = "172800000"
+    "local.retention.ms" = "3600000"
   }
 }`, fixed: `
 resource "kafka_topic" "topic_wrong_retention_comment" {
   name               = "topic_wrong_retention_comment"
   replication_factor = 3
   config = {
-    # keep data in primary storage for 2 days
-    "local.retention.ms" = "172800000"
+    # keep data in primary storage for 1 hour
+    "local.retention.ms" = "3600000"
   }
 }`,
 		expected: []*helper.Issue{
