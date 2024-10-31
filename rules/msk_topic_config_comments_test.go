@@ -92,6 +92,19 @@ resource "kafka_topic" "topic_good_retention_comment_months" {
 		expected: []*helper.Issue{},
 	},
 	{
+		// the value is validated in the msk_topic_config rule
+		name: "retention time invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "retention.ms" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
 		name: "retention time in years",
 		input: `
 resource "kafka_topic" "topic_good_retention_comment_years" {
@@ -170,6 +183,19 @@ resource "kafka_topic" "topic_wrong_retention_comment" {
 				},
 			},
 		},
+	},
+	{
+		// the value is validated in the msk_topic_config rule
+		name: "local retention time invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "local.retention.ms" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{},
 	},
 }
 
