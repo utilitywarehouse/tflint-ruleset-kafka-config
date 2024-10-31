@@ -27,7 +27,7 @@ resource "kafka_topic" "topic_without_repl_factor_and_name" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -50,7 +50,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		fixed: `
@@ -60,7 +60,7 @@ resource "kafka_topic" "topic_without_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -83,7 +83,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		fixed: `
@@ -93,7 +93,7 @@ resource "kafka_topic" "topic_with_incorrect_repl_factor" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -136,7 +136,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		fixed: `
@@ -146,7 +146,7 @@ resource "kafka_topic" "topic_without_compression_type" {
   config = {
     "compression.type" = "zstd"
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -169,7 +169,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "gzip"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		fixed: `
@@ -179,7 +179,7 @@ resource "kafka_topic" "topic_with_wrong_compression_type" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -204,7 +204,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   replication_factor = 3
   config = {
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		fixed: `
@@ -214,7 +214,7 @@ resource "kafka_topic" "topic_without_cleanup_policy" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{
@@ -359,7 +359,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "259200000" # keep data for 3 days
+    "retention.ms"     = "259200000"
     "compression.type" = "zstd"
   }
 }`,
@@ -372,7 +372,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200000" # keep data for 3 days
+    "retention.ms"       = "259200000"
     "compression.type"   = "zstd"
   }
 }`,
@@ -403,7 +403,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "-1" # keep data forever
+    "retention.ms"     = "-1"
     "compression.type" = "zstd"
   }
 }`,
@@ -416,7 +416,7 @@ resource "kafka_topic" "topic_with_infinite_retention" {
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "cleanup.policy"     = "delete"
-    "retention.ms"       = "-1" # keep data forever
+    "retention.ms"       = "-1"
     "compression.type"   = "zstd"
   }
 }`,
@@ -447,7 +447,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   replication_factor = 3
   config = {
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "259200001" # keep data for 3 days
+    "retention.ms"     = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type" = "zstd"
@@ -460,7 +460,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     # keep data in hot storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type"   = "zstd"
@@ -486,7 +486,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,
@@ -499,7 +499,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,
@@ -531,7 +531,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,
@@ -544,7 +544,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     "compression.type"      = "zstd"
   }
 }`,
@@ -568,7 +568,7 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "259200001" # keep data for 3 days
+    "retention.ms"          = "259200001"
     "local.retention.ms"    = "invalid-val"
     "compression.type"      = "zstd"
   }
@@ -593,7 +593,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "86400000" # keep data for 1 day
+    "retention.ms"          = "86400000"
     "compression.type"      = "zstd"
   }
 }`,
@@ -604,7 +604,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
   config = {
 
     "cleanup.policy"   = "delete"
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
     "compression.type" = "zstd"
   }
 }`,
@@ -628,7 +628,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_disabled_remote_st
   config = {
     "remote.storage.enable" = "false"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "86400000" # keep data for 1 day
+    "retention.ms"          = "86400000"
     "compression.type"      = "zstd"
   }
 }`,
@@ -643,7 +643,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   config = {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    "retention.ms"          = "172800000" # keep data for 2 days
+    "retention.ms"          = "172800000"
     "local.retention.ms"    = "86400000"
     "compression.type"      = "zstd"
   }
@@ -655,7 +655,7 @@ resource "kafka_topic" "topic_with_less_3_days_retention_with_local_storage" {
   config = {
 
     "cleanup.policy" = "delete"
-    "retention.ms"   = "172800000" # keep data for 2 days
+    "retention.ms"   = "172800000"
 
     "compression.type" = "zstd"
   }
@@ -765,7 +765,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
   name               = "topic_compacted_with_retention_time"
   replication_factor = 3
   config = {
-    "retention.ms"     = "86400000" # keep data for 1 day
+    "retention.ms"     = "86400000"
     "cleanup.policy"   = "compact"
     "compression.type" = "zstd"
   }
@@ -775,7 +775,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
   name               = "topic_compacted_with_retention_time"
   replication_factor = 3
   config = {
-    # keep data for 1 day
+
     "cleanup.policy"   = "compact"
     "compression.type" = "zstd"
   }
@@ -795,7 +795,7 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
 
 var goodConfigTests = []topicConfigTestCase{
 	{
-		name: "good topic definition without tiered storage",
+		name: "good topic definition without retention",
 		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
@@ -803,14 +803,13 @@ resource "kafka_topic" "good topic" {
   config = {
     "cleanup.policy"   = "delete"
     "compression.type" = "zstd"
-    # keep data for 1 day
     "retention.ms"     = "86400000"
   }
 }`,
 		expected: []*helper.Issue{},
 	},
 	{
-		name: "good topic definition with tiered storage",
+		name: "good topic definition with retention",
 		input: `
 resource "kafka_topic" "good topic" {
   name               = "good_topic"
@@ -820,7 +819,6 @@ resource "kafka_topic" "good topic" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    # keep data for 1 month
     "retention.ms"          = "2592000000"
     "compression.type"      = "zstd"
   }
@@ -843,6 +841,8 @@ resource "kafka_topic" "good topic" {
 }
 
 func Test_MSKTopicConfigRule(t *testing.T) {
+	rule := &MSKTopicConfigRule{}
+
 	var allTests []topicConfigTestCase
 	allTests = append(allTests, replicationFactorTests...)
 	allTests = append(allTests, compressionTypeTests...)
@@ -850,12 +850,10 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	allTests = append(allTests, deletePolicyRetentionTimeTests...)
 	allTests = append(allTests, deletePolicyTieredStorageTests...)
 	allTests = append(allTests, compactPolicyTests...)
-	allTests = append(allTests, configValueCommentsTests...)
 	allTests = append(allTests, goodConfigTests...)
 
 	for _, tc := range allTests {
 		t.Run(tc.name, func(t *testing.T) {
-			rule := &MSKTopicConfigRule{}
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
 
