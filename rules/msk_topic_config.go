@@ -661,12 +661,26 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
-	retTimePair, hasRetTime := configKeyToPairMap[retentionTimeAttr]
-	if !hasRetTime {
+	if err := r.validateTimeConfigValue(runner, configKeyToPairMap, retentionTimeAttr, "-1", "keep data"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *MSKTopicConfigRule) validateTimeConfigValue(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+	attr string,
+	infiniteVal string,
+	baseMsg string,
+) error {
+	timePair, hasConfig := configKeyToPairMap[attr]
+	if !hasConfig {
 		return nil
 	}
 
-	msg, err := buildDurationComment(retTimePair, "-1")
+	msg, err := buildDurationComment(timePair, infiniteVal, baseMsg)
 	if err != nil {
 		return err
 	}
@@ -674,7 +688,7 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 		return nil
 	}
 
-	comment, err := r.getExistingComment(runner, retTimePair)
+	comment, err := r.getExistingComment(runner, timePair)
 	if err != nil {
 		return err
 	}
@@ -682,10 +696,10 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 	if comment == nil {
 		err := runner.EmitIssueWithFix(
 			r,
-			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", retentionTimeAttr),
-			retTimePair.Key.Range(),
+			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", attr),
+			timePair.Key.Range(),
 			func(f tflint.Fixer) error {
-				return f.InsertTextAfter(retTimePair.Value.Range(), msg)
+				return f.InsertTextAfter(timePair.Value.Range(), msg)
 			},
 		)
 		if err != nil {
@@ -696,13 +710,11 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 
 	commentTxt := strings.TrimSpace(string(comment.Bytes))
 	if commentTxt != msg {
-		err := runner.EmitIssueWithFix(
-			r,
-			fmt.Sprintf(
-				"%s value doesn't correspond to the human readable value in the comment: fixing it ...",
-				retentionTimeAttr,
-			),
-			comment.Range,
+		issueMsg := fmt.Sprintf(
+			"%s value doesn't correspond to the human readable value in the comment: fixing it ...",
+			attr,
+		)
+		err := runner.EmitIssueWithFix(r, issueMsg, comment.Range,
 			func(f tflint.Fixer) error {
 				return f.ReplaceText(comment.Range, msg+"\n")
 			},
@@ -711,7 +723,6 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 			return fmt.Errorf("emitting issue: incorrect replication factor: %w", err)
 		}
 	}
-
 	return nil
 }
 
@@ -721,7 +732,6 @@ func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.K
 		return nil, err
 	}
 
-	// todo: check to use binary search
 	// first look for the comment on the same line, after the property definition.
 	// Example: "retention.ms" = "2629800000" # keep data for 30 days
 	afterPropertyIdx := slices.IndexFunc(comments, func(comment hclsyntax.Token) bool {
@@ -772,13 +782,12 @@ func isNotComment(token hclsyntax.Token) bool {
 	return token.Type != hclsyntax.TokenComment
 }
 
-func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string) (string, error) {
+func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string, baseMsg string) (string, error) {
 	var timeVal string
 	diags := gohcl.DecodeExpression(timePair.Value, nil, &timeVal)
 	if diags.HasErrors() {
 		return "", diags
 	}
-	baseMsg := "keep data"
 
 	if timeVal == infiniteVal {
 		return fmt.Sprintf("# %s forever", baseMsg), nil
