@@ -708,7 +708,7 @@ func (r *MSKTopicConfigRule) validateConfigValuesInComments(
 }
 
 func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.KeyValuePair) (*hclsyntax.Token, error) {
-	comments, err := getCommentsForFile(runner, pair.Key.Range().Filename)
+	comments, err := r.getCommentsForFile(runner, pair.Key.Range().Filename)
 	if err != nil {
 		return nil, err
 	}
@@ -740,7 +740,7 @@ func (r *MSKTopicConfigRule) getExistingComment(runner tflint.Runner, pair hcl.K
 	return nil, nil
 }
 
-func getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens, error) {
+func (r *MSKTopicConfigRule) getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens, error) {
 	// todo: optimise this, as we're reading the file for each topic
 	file, err := runner.GetFile(filename)
 	if err != nil {
@@ -752,11 +752,11 @@ func getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens
 		return nil, diags
 	}
 
-	isNotCommentFunc := func(token hclsyntax.Token) bool {
-		return token.Type != hclsyntax.TokenComment
-	}
+	return slices.DeleteFunc(tokens, isNotComment), nil
+}
 
-	return slices.DeleteFunc(tokens, isNotCommentFunc), nil
+func isNotComment(token hclsyntax.Token) bool {
+	return token.Type != hclsyntax.TokenComment
 }
 
 func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string) (string, error) {
