@@ -878,6 +878,40 @@ resource "kafka_topic" "topic_good_retention_comment_infinite" {
 		expected: []*helper.Issue{},
 	},
 	{
+		name: "retention time in months",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_months" {
+  name               = "topic_good_retention_comment_months"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "5184000000" # keep data for 2 months 
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "retention time in months",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_months" {
+  name               = "topic_good_retention_comment_months"
+  replication_factor = 3
+  config = {
+    # keep data in hot storage for 1 day
+    "local.retention.ms"    = "86400000"
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "31536000000" # keep data for 1 year 
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
 		name: "retention time less than a day with good comment",
 		input: `
 resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
@@ -920,7 +954,7 @@ resource "kafka_topic" "good topic" {
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
-    # keep data for 30 days
+    # keep data for 1 month
     "retention.ms"          = "2592000000"
     "compression.type"      = "zstd"
   }

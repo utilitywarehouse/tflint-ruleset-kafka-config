@@ -347,6 +347,8 @@ const (
 	retentionTimeAttr = "retention.ms"
 	millisInOneHour   = 60 * 60 * 1000
 	millisInOneDay    = 24 * millisInOneHour
+	millisInOneMonth  = 30 * millisInOneDay
+	millisInOneYear   = 365 * millisInOneDay
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
@@ -783,8 +785,23 @@ func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string) (string
 }
 
 func determineTimeUnits(millis int) (int, string) {
-	timeInDays := millis / millisInOneDay
+	timeInYears := millis / millisInOneYear
+	if timeInYears > 0 {
+		if timeInYears == 1 {
+			return 1, "year"
+		}
+		return timeInYears, "years"
+	}
 
+	timeInMonths := millis / millisInOneMonth
+	if timeInMonths > 0 {
+		if timeInMonths == 1 {
+			return 1, "month"
+		}
+		return timeInMonths, "months"
+	}
+
+	timeInDays := millis / millisInOneDay
 	if timeInDays > 0 {
 		if timeInDays == 1 {
 			return 1, "day"
