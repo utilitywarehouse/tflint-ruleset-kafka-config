@@ -907,6 +907,21 @@ resource "kafka_topic" "topic_good_retention_comment_infinite" {
 }`,
 		expected: []*helper.Issue{},
 	},
+	{
+		name: "retention time less than a day with good comment",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_less_than_a_day" {
+  name               = "topic_good_retention_comment_less_than_a_day"
+  replication_factor = 3
+  config = {
+    "cleanup.policy" = "delete"
+    # keep data for 6 hours
+    "retention.ms"     = "21600000"
+    "compression.type" = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
 }
 
 var goodConfigTests = []topicConfigTestCase{

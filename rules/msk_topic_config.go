@@ -345,7 +345,8 @@ func (r *MSKTopicConfigRule) getAndValidateCleanupPolicyValue(
 
 const (
 	retentionTimeAttr = "retention.ms"
-	millisInOneDay    = 1 * 24 * 60 * 60 * 1000
+	millisInOneHour   = 60 * 60 * 1000
+	millisInOneDay    = 24 * millisInOneHour
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
@@ -740,31 +741,44 @@ func getCommentsForFile(runner tflint.Runner, filename string) (hclsyntax.Tokens
 	return slices.DeleteFunc(tokens, isNotCommentFunc), nil
 }
 
-func buildDurationComment(retTimePair hcl.KeyValuePair, infiniteVal string) (string, error) {
-	var retTimeVal string
-	diags := gohcl.DecodeExpression(retTimePair.Value, nil, &retTimeVal)
+func buildDurationComment(timePair hcl.KeyValuePair, infiniteVal string) (string, error) {
+	var timeVal string
+	diags := gohcl.DecodeExpression(timePair.Value, nil, &timeVal)
 	if diags.HasErrors() {
 		return "", diags
 	}
 	baseMsg := "keep data"
 
-	if retTimeVal == infiniteVal {
+	if timeVal == infiniteVal {
 		return fmt.Sprintf("# %s forever", baseMsg), nil
 	}
 
-	retTimeIntVal, err := strconv.Atoi(retTimeVal)
+	timeMillis, err := strconv.Atoi(timeVal)
 	// todo: check what we should do here
 	if err != nil {
 		//nolint:nilerr
 		return "", nil
 	}
-	timeInDays := retTimeIntVal / millisInOneDay
 
-	unit := "days"
-	if timeInDays == 1 {
-		unit = "day"
+	timeUnits, unit := determineTimeUnits(timeMillis)
+
+	msg := fmt.Sprintf("# %s for %d %s", baseMsg, timeUnits, unit)
+	return msg, nil
+}
+
+func determineTimeUnits(millis int) (int, string) {
+	timeInDays := millis / millisInOneDay
+
+	if timeInDays > 0 {
+		if timeInDays == 1 {
+			return 1, "day"
+		}
+		return timeInDays, "days"
 	}
 
-	msg := fmt.Sprintf("# %s for %d %s", baseMsg, timeInDays, unit)
-	return msg, nil
+	timeInHours := millis / millisInOneHour
+	if timeInHours == 1 {
+		return 1, "hour"
+	}
+	return timeInHours, "hours"
 }
