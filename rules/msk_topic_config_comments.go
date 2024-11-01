@@ -102,7 +102,7 @@ var configTimeValueCommentInfos = []configTimeValueCommentInfo{
 	{
 		key:              localRetentionTimeAttr,
 		infiniteValue:    "-2",
-		baseComment:      "keep data in primary storage",
+		baseComment:      localRetentionTimeCommentBase,
 		issueWhenInvalid: false,
 	},
 	{
@@ -270,10 +270,17 @@ func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 		return "", nil
 	}
 
+	baseComment := configValueInfo.baseComment
+
+	msg := buildCommentForMillis(timeMillis, baseComment)
+	return msg, nil
+}
+
+func buildCommentForMillis(timeMillis int, baseComment string) string {
 	timeUnits, unit := determineTimeUnits(timeMillis)
 
-	msg := fmt.Sprintf("# %s for %d %s", configValueInfo.baseComment, timeUnits, unit)
-	return msg, nil
+	msg := fmt.Sprintf("# %s for %d %s", baseComment, timeUnits, unit)
+	return msg
 }
 
 func determineTimeUnits(millis int) (int, string) {
