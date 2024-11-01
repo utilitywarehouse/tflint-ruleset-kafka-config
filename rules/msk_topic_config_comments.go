@@ -279,37 +279,38 @@ func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 func buildCommentForMillis(timeMillis int, baseComment string) string {
 	timeUnits, unit := determineTimeUnits(timeMillis)
 
-	msg := fmt.Sprintf("# %s for %d %s", baseComment, timeUnits, unit)
+	timeUnitsStr := strconv.FormatFloat(timeUnits, 'f', -1, 64)
+	msg := fmt.Sprintf("# %s for %s %s", baseComment, timeUnitsStr, unit)
 	return msg
 }
 
-func determineTimeUnits(millis int) (int, string) {
-	// todo: this is not really perfect, as if the time is not exact in millis we'll output a partial number
-	timeInYears := millis / millisInOneYear
-	if timeInYears > 0 {
+func determineTimeUnits(millis int) (float64, string) {
+	floatMillis := float64(millis)
+	timeInYears := floatMillis / millisInOneYear
+	if timeInYears >= 1 {
 		if timeInYears == 1 {
 			return 1, "year"
 		}
 		return timeInYears, "years"
 	}
 
-	timeInMonths := millis / millisInOneMonth
-	if timeInMonths > 0 {
+	timeInMonths := floatMillis / millisInOneMonth
+	if timeInMonths >= 1 {
 		if timeInMonths == 1 {
 			return 1, "month"
 		}
 		return timeInMonths, "months"
 	}
 
-	timeInDays := millis / millisInOneDay
-	if timeInDays > 0 {
+	timeInDays := floatMillis / millisInOneDay
+	if timeInDays >= 1 {
 		if timeInDays == 1 {
 			return 1, "day"
 		}
 		return timeInDays, "days"
 	}
 
-	timeInHours := millis / millisInOneHour
+	timeInHours := floatMillis / millisInOneHour
 	if timeInHours == 1 {
 		return 1, "hour"
 	}
