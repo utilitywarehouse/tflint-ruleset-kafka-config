@@ -197,6 +197,84 @@ resource "kafka_topic" "topic_def" {
 }`,
 		expected: []*helper.Issue{},
 	},
+	{
+		name: "max compaction lag without comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "max.compaction.lag.ms" = "2592000000"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "max.compaction.lag.ms" = "2592000000" # allow not compacted keys maximum for 1 month
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.compaction.lag.ms must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 5},
+					End:      hcl.Pos{Line: 6, Column: 28},
+				},
+			},
+		},
+	},
+	{
+		name: "max compaction lag with wrong comment",
+		input: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    "max.compaction.lag.ms" = "3600000" # allow not compacted keys maximum for 1 day
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_wrong_retention_comment" {
+  name               = "topic_wrong_retention_comment"
+  replication_factor = 3
+  config = {
+    "max.compaction.lag.ms" = "3600000" # allow not compacted keys maximum for 1 hour
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.compaction.lag.ms value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 41},
+					End:      hcl.Pos{Line: 7, Column: 1},
+				},
+			},
+		},
+	},
+	{
+		// the value is validated in the msk_topic_config rule
+		name: "max compaction lag invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "max.compaction.lag.ms" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.compaction.lag.ms must have a valid integer value expressed in milliseconds",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 6, Column: 31},
+					End:      hcl.Pos{Line: 6, Column: 44},
+				},
+			},
+		},
+	},
 }
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {

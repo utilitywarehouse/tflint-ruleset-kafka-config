@@ -105,6 +105,12 @@ var configTimeValueCommentInfos = []configTimeValueCommentInfo{
 		baseComment:      "keep data in primary storage",
 		issueWhenInvalid: false,
 	},
+	{
+		key:              "max.compaction.lag.ms",
+		infiniteValue:    "",
+		baseComment:      "allow not compacted keys maximum",
+		issueWhenInvalid: true,
+	},
 }
 
 func (r *MSKTopicConfigCommentsRule) validateConfigValuesInComments(
@@ -130,7 +136,7 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 		return nil
 	}
 
-	msg, err := buildDurationComment(timePair, configValueInfo)
+	msg, err := r.buildDurationComment(runner, timePair, configValueInfo)
 	if err != nil {
 		return err
 	}
@@ -233,7 +239,11 @@ func isNotComment(token hclsyntax.Token) bool {
 	return token.Type != hclsyntax.TokenComment
 }
 
-func buildDurationComment(timePair hcl.KeyValuePair, configValueInfo configTimeValueCommentInfo) (string, error) {
+func (r *MSKTopicConfigCommentsRule) buildDurationComment(
+	runner tflint.Runner,
+	timePair hcl.KeyValuePair,
+	configValueInfo configTimeValueCommentInfo,
+) (string, error) {
 	var timeVal string
 	diags := gohcl.DecodeExpression(timePair.Value, nil, &timeVal)
 	if diags.HasErrors() {
@@ -245,9 +255,18 @@ func buildDurationComment(timePair hcl.KeyValuePair, configValueInfo configTimeV
 	}
 
 	timeMillis, err := strconv.Atoi(timeVal)
-	// todo: check what we should do here
 	if err != nil {
-		//nolint:nilerr
+		if configValueInfo.issueWhenInvalid {
+			issueMsg := fmt.Sprintf(
+				"%s must have a valid integer value expressed in milliseconds",
+				configValueInfo.key,
+			)
+			err := runner.EmitIssue(r, issueMsg, timePair.Value.Range())
+			if err != nil {
+				return "", fmt.Errorf("emitting issue: invalid time value: %w", err)
+			}
+		}
+
 		return "", nil
 	}
 
