@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
+	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
 type topicConfigTestCase struct {
@@ -368,11 +369,10 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   replication_factor = 3
   config = {
     "remote.storage.enable" = "true"
-    # keep data in hot storage for 1 day
-    "local.retention.ms" = "86400000"
-    "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200000"
-    "compression.type"   = "zstd"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200000"
+    "compression.type"      = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -412,11 +412,10 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "remote.storage.enable" = "true"
-    # keep data in hot storage for 1 day
-    "local.retention.ms" = "86400000"
-    "cleanup.policy"     = "delete"
-    "retention.ms"       = "-1"
-    "compression.type"   = "zstd"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "-1"
+    "compression.type"      = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -447,7 +446,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
   config = {
     "cleanup.policy"   = "delete"
     "retention.ms"     = "259200001"
-    # keep data in hot storage for 1 day
+    # keep data in primary storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type" = "zstd"
   }
@@ -460,7 +459,7 @@ resource "kafka_topic" "topic_with_missing_tiered_storage_enabling" {
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
     "retention.ms"          = "259200001"
-    # keep data in hot storage for 1 day
+    # keep data in primary storage for 1 day
     "local.retention.ms" = "86400000"
     "compression.type"   = "zstd"
   }
@@ -494,8 +493,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   name               = "topic_with_more_than_3_days_retention_tiered_disabled"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
-    "local.retention.ms"    = "86400000"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
     "retention.ms"          = "259200001"
@@ -539,8 +537,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   name               = "topic_with_tiered_storage_missing_local_retention"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
-    "local.retention.ms"    = "86400000"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
     "retention.ms"          = "259200001"
@@ -814,7 +811,7 @@ resource "kafka_topic" "good topic" {
   name               = "good_topic"
   replication_factor = 3
   config = {
-    # keep data in hot storage for 1 day
+    # keep data in primary storage for 1 day
     "local.retention.ms"    = "86400000"
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
@@ -869,7 +866,7 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	}
 }
 
-func setExpectedRule(expected helper.Issues, rule *MSKTopicConfigRule) {
+func setExpectedRule(expected helper.Issues, rule tflint.Rule) {
 	for _, exp := range expected {
 		exp.Rule = rule
 	}

@@ -20,6 +20,8 @@ func main() {
 				&rules.MSKAppTopicsRule{},
 				&rules.MSKTopicNameRule{},
 				&rules.MSKTopicConfigRule{},
+				// keep the comments rule after the config one, as the config one might remove some properties checked by the comments one
+				&rules.MSKTopicConfigCommentsRule{},
 				&rules.MSKUniqueAppNamesRule{},
 			},
 		},

@@ -341,25 +341,30 @@ func (r *MSKTopicConfigRule) getAndValidateCleanupPolicyValue(
 
 const (
 	retentionTimeAttr = "retention.ms"
-	millisInOneDay    = 1 * 24 * 60 * 60 * 1000
+	millisInOneHour   = 60 * 60 * 1000
+	millisInOneDay    = 24 * millisInOneHour
+	millisInOneMonth  = 30 * millisInOneDay
+	millisInOneYear   = 365 * millisInOneDay
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
 	tieredStorageEnabledValue       = "true"
 	localRetentionTimeAttr          = "local.retention.ms"
-	localRetentionTimeInDaysDefault = 1
+	localRetentionTimeMillisDefault = 1 * millisInOneDay
+	localRetentionTimeCommentBase   = "keep data in primary storage"
 )
 
 /*	Putting an invalid value by default to force users to put a valid value */
 var (
 	retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
 	enableTieredStorage      = fmt.Sprintf(`"%s" = "%s"`, tieredStorageEnableAttr, tieredStorageEnabledValue)
-	localRetentionTimeFix    = fmt.Sprintf(
-		`# keep data in hot storage for %d day
-     "%s" = "%d"`,
-		localRetentionTimeInDaysDefault,
+	/* putting the comment after the property definition. */
+	localRetentionTimeFix = fmt.Sprintf(
+		`"%s" = "%d" %s`,
 		localRetentionTimeAttr,
-		localRetentionTimeInDaysDefault*millisInOneDay)
+		localRetentionTimeMillisDefault,
+		buildCommentForMillis(localRetentionTimeMillisDefault, localRetentionTimeCommentBase),
+	)
 )
 
 func (r *MSKTopicConfigRule) validateRetentionForDeletePolicy(
@@ -412,7 +417,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 		msg := fmt.Sprintf(
 			"missing %s when tiered storage is enabled: using default '%d'",
 			localRetentionTimeAttr,
-			localRetentionTimeInDaysDefault*millisInOneDay,
+			localRetentionTimeMillisDefault,
 		)
 		err := runner.EmitIssueWithFix(r, msg, config.Range,
 			func(f tflint.Fixer) error {
