@@ -59,7 +59,7 @@ func (r *MSKTopicConfigCommentsRule) Check(runner tflint.Runner) error {
 	}
 
 	for _, topicResource := range resourceContents.Blocks {
-		if err := r.validateTopicConfig(runner, topicResource); err != nil {
+		if err := r.validateTopicConfigComments(runner, topicResource); err != nil {
 			return err
 		}
 	}
@@ -67,7 +67,7 @@ func (r *MSKTopicConfigCommentsRule) Check(runner tflint.Runner) error {
 	return nil
 }
 
-func (r *MSKTopicConfigCommentsRule) validateTopicConfig(runner tflint.Runner, topic *hclext.Block) error {
+func (r *MSKTopicConfigCommentsRule) validateTopicConfigComments(runner tflint.Runner, topic *hclext.Block) error {
 	configAttr, hasConfig := topic.Body.Attributes["config"]
 	if !hasConfig {
 		return nil
