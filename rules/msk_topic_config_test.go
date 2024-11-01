@@ -369,11 +369,10 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention" {
   replication_factor = 3
   config = {
     "remote.storage.enable" = "true"
-    # keep data in primary storage for 1 day
-    "local.retention.ms" = "86400000"
-    "cleanup.policy"     = "delete"
-    "retention.ms"       = "259200000"
-    "compression.type"   = "zstd"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200000"
+    "compression.type"      = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -413,11 +412,10 @@ resource "kafka_topic" "topic_with_infinite_retention" {
   replication_factor = 3
   config = {
     "remote.storage.enable" = "true"
-    # keep data in primary storage for 1 day
-    "local.retention.ms" = "86400000"
-    "cleanup.policy"     = "delete"
-    "retention.ms"       = "-1"
-    "compression.type"   = "zstd"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "-1"
+    "compression.type"      = "zstd"
   }
 }`,
 		expected: []*helper.Issue{
@@ -495,8 +493,7 @@ resource "kafka_topic" "topic_with_more_than_3_days_retention_tiered_disabled" {
   name               = "topic_with_more_than_3_days_retention_tiered_disabled"
   replication_factor = 3
   config = {
-    # keep data in primary storage for 1 day
-    "local.retention.ms"    = "86400000"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
     "retention.ms"          = "259200001"
@@ -540,8 +537,7 @@ resource "kafka_topic" "topic_with_tiered_storage_missing_local_retention" {
   name               = "topic_with_tiered_storage_missing_local_retention"
   replication_factor = 3
   config = {
-    # keep data in primary storage for 1 day
-    "local.retention.ms"    = "86400000"
+    "local.retention.ms"    = "86400000" # keep data in primary storage for 1 day
     "remote.storage.enable" = "true"
     "cleanup.policy"        = "delete"
     "retention.ms"          = "259200001"

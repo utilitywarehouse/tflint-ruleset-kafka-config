@@ -358,12 +358,12 @@ const (
 var (
 	retentionTimeDefTemplate = fmt.Sprintf(`"%s" = "???"`, retentionTimeAttr)
 	enableTieredStorage      = fmt.Sprintf(`"%s" = "%s"`, tieredStorageEnableAttr, tieredStorageEnabledValue)
-	localRetentionTimeFix    = fmt.Sprintf(
-		`%s
-     "%s" = "%d"`,
-		buildCommentForMillis(localRetentionTimeMillisDefault, localRetentionTimeCommentBase),
+	/* putting the comment after the property definition. */
+	localRetentionTimeFix = fmt.Sprintf(
+		`"%s" = "%d" %s`,
 		localRetentionTimeAttr,
 		localRetentionTimeMillisDefault,
+		buildCommentForMillis(localRetentionTimeMillisDefault, localRetentionTimeCommentBase),
 	)
 )
 
