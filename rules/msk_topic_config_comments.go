@@ -258,6 +258,7 @@ func buildDurationComment(timePair hcl.KeyValuePair, configValueInfo configTimeV
 }
 
 func determineTimeUnits(millis int) (int, string) {
+	// todo: this is not really perfect, as if the time is not exact in millis we'll output a partial number
 	timeInYears := millis / millisInOneYear
 	if timeInYears > 0 {
 		if timeInYears == 1 {
