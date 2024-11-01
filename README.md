@@ -17,13 +17,14 @@ plugin "uw-kafka-config" {
 
 ## Rules
 
-| Name                                                | Description                                                                                                                      |
-|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| [`msk_module_backend`](rules/msk_module_backend.md) | Requires an S3 backend to be defined, with a key that has as suffix the name of the team (taken from the current directory name) |
-| [`msk_app_topics`](rules/msk_app_topics.md)         | Requires apps consume from and produce to only topics define in their module.                                                    |
-| [`msk_topic_name`](rules/msk_topic_name.md)         | Requires defined topics in a module to belong to that team.                                                                      |
-| [`msk_topic_config`](rules/msk_topic_config.md)     | Checks the configuration for MSK topics                                                                                          |
-| [`msk_unique_app_names`](rules/msk_unique_app_names.md) | Checks that TLS app names are unique |
+| Name                                                              | Description                                                                                                                      |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| [`msk_module_backend`](rules/msk_module_backend.md)               | Requires an S3 backend to be defined, with a key that has as suffix the name of the team (taken from the current directory name) |
+| [`msk_app_topics`](rules/msk_app_topics.md)                       | Requires apps consume from and produce to only topics define in their module.                                                    |
+| [`msk_topic_name`](rules/msk_topic_name.md)                       | Requires defined topics in a module to belong to that team.                                                                      |
+| [`msk_topic_config`](rules/msk_topic_config.md)                   | Checks the configuration for MSK topics                                                                                          |
+| [`msk_topic_config_comments`](rules/msk_topic_config_comments.md) | Checks the comments for topic configurations expressed in millis                                                                 |
+| [`msk_unique_app_names`](rules/msk_unique_app_names.md)           | Checks that TLS app names are unique                                                                                             |
 
 
 ## Building the plugin
