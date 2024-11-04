@@ -86,7 +86,7 @@ resource "kafka_topic" "topic_good_retention_comment_months" {
   name               = "topic_good_retention_comment_months"
   replication_factor = 3
   config = {
-    "retention.ms" = "5184000000" # keep data for 2 months 
+    "retention.ms" = "5259600000" # keep data for 2 months 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -111,7 +111,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "31536000000" # keep data for 1 year 
+    "retention.ms" = "31556952000" # keep data for 1 year 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -123,7 +123,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "47304000000" # keep data for 1.5 years 
+    "retention.ms" = "47335428000" # keep data for 1.5 years 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -135,7 +135,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "6480000000" # keep data for 2.5 months 
+    "retention.ms" = "6574500000" # keep data for 2.5 months 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -228,14 +228,14 @@ resource "kafka_topic" "topic_def" {
   name               = "topic_def"
   replication_factor = 3
   config = {
-    "max.compaction.lag.ms" = "2592000000"
+    "max.compaction.lag.ms" = "2629800000"
   }
 }`, fixed: `
 resource "kafka_topic" "topic_def" {
   name               = "topic_def"
   replication_factor = 3
   config = {
-    "max.compaction.lag.ms" = "2592000000" # allow not compacted keys maximum for 1 month
+    "max.compaction.lag.ms" = "2629800000" # allow not compacted keys maximum for 1 month
   }
 }`,
 		expected: []*helper.Issue{

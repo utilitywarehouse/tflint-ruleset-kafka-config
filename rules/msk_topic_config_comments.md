@@ -6,8 +6,8 @@ Topic configurations expressed in milliseconds must have comments explaining the
 The comments can be placed after the property definition on the same line or on the line before the definition.
 
 For computing the human-readable values it considers the following:
-- 1 month has 30 days
-- 1 year has 365 days
+- 1 month has `2629800000` millis which is 30.4375 days
+- 1 year has `31556952000` millis which is 365.2425 days
 
 It currently checks the properties:
 - retention.ms: explanation must start with `keep data`
