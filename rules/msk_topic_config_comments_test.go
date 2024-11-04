@@ -117,6 +117,18 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
 		expected: []*helper.Issue{},
 	},
 	{
+		name: "retention time in years not precise",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_years" {
+  name               = "topic_good_retention_comment_years"
+  replication_factor = 3
+  config = {
+    "retention.ms" = "220898482000" # keep data for 7 years 
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
 		name: "retention time in partial years",
 		input: `
 resource "kafka_topic" "topic_good_retention_comment_years" {

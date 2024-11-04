@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -284,9 +285,14 @@ func buildCommentForMillis(timeMillis int, baseComment string) string {
 	return msg
 }
 
+/*	round to 1 digit precision  */
+func round(val float64) float64 {
+	return math.Round(val*10) / 10
+}
+
 func determineTimeUnits(millis int) (float64, string) {
 	floatMillis := float64(millis)
-	timeInYears := floatMillis / millisInOneYear
+	timeInYears := round(floatMillis / millisInOneYear)
 	if timeInYears >= 1 {
 		if timeInYears == 1 {
 			return 1, "year"
@@ -294,7 +300,7 @@ func determineTimeUnits(millis int) (float64, string) {
 		return timeInYears, "years"
 	}
 
-	timeInMonths := floatMillis / millisInOneMonth
+	timeInMonths := round(floatMillis / millisInOneMonth)
 	if timeInMonths >= 1 {
 		if timeInMonths == 1 {
 			return 1, "month"
@@ -302,7 +308,7 @@ func determineTimeUnits(millis int) (float64, string) {
 		return timeInMonths, "months"
 	}
 
-	timeInDays := floatMillis / millisInOneDay
+	timeInDays := round(floatMillis / millisInOneDay)
 	if timeInDays >= 1 {
 		if timeInDays == 1 {
 			return 1, "day"
@@ -310,7 +316,7 @@ func determineTimeUnits(millis int) (float64, string) {
 		return timeInDays, "days"
 	}
 
-	timeInHours := floatMillis / millisInOneHour
+	timeInHours := round(floatMillis / millisInOneHour)
 	if timeInHours == 1 {
 		return 1, "hour"
 	}
