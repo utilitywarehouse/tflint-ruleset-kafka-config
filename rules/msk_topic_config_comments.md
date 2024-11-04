@@ -9,6 +9,21 @@ For computing the human-readable values it considers the following:
 - 1 month has `2629800000` millis which is 30.4375 days
 - 1 year has `31556952000` millis which is 365.2425 days
 
+Here is a table with the precomputed values:
+
+| Number | For N months   | For N years     |  
+|--------|----------------|-----------------|  
+| 1      | 2,629,800,000  | 31,556,952,000  |  
+| 2      | 5,259,600,000  | 63,113,904,000  |  
+| 3      | 7,889,400,000  | 94,670,856,000  |  
+| 4      | 10,519,200,000 | 126,227,808,000 |  
+| 5      | 13,149,000,000 | 157,784,760,000 |  
+| 6      | 15,778,800,000 | 189,341,712,000 |  
+| 7      | 18,408,600,000 | 220,898,664,000 |  
+| 8      | 21,038,400,000 | 252,455,616,000 |  
+| 9      | 23,668,200,000 | 284,012,568,000 |  
+| 10     | 26,298,000,000 | 315,569,520,000 |
+
 It currently checks the properties:
 - retention.ms: explanation must start with `keep data`
 - local.retention.ms: explanation must start with `keep data in primary storage`
