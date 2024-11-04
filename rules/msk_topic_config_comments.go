@@ -132,7 +132,8 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 	configValueInfo configTimeValueCommentInfo,
 ) error {
-	timePair, hasConfig := configKeyToPairMap[configValueInfo.key]
+	key := configValueInfo.key
+	timePair, hasConfig := configKeyToPairMap[key]
 	if !hasConfig {
 		return nil
 	}
@@ -145,7 +146,19 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 		return nil
 	}
 
-	comment, err := r.getExistingComment(runner, timePair)
+	if err = r.reportHumanReadableComment(runner, timePair, key, msg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MSKTopicConfigCommentsRule) reportHumanReadableComment(
+	runner tflint.Runner,
+	keyValuePair hcl.KeyValuePair,
+	key string,
+	commentMsg string,
+) error {
+	comment, err := r.getExistingComment(runner, keyValuePair)
 	if err != nil {
 		return err
 	}
@@ -153,31 +166,31 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 	if comment == nil {
 		err := runner.EmitIssueWithFix(
 			r,
-			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", configValueInfo.key),
-			timePair.Key.Range(),
+			fmt.Sprintf("%s must have a comment with the human readable value: adding it ...", key),
+			keyValuePair.Key.Range(),
 			func(f tflint.Fixer) error {
-				return f.InsertTextAfter(timePair.Value.Range(), msg)
+				return f.InsertTextAfter(keyValuePair.Value.Range(), commentMsg)
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: no comment for time value: %w", err)
+			return fmt.Errorf("emitting issue: no comment for human readable value: %w", err)
 		}
 		return nil
 	}
 
 	commentTxt := strings.TrimSpace(string(comment.Bytes))
-	if commentTxt != msg {
+	if commentTxt != commentMsg {
 		issueMsg := fmt.Sprintf(
 			"%s value doesn't correspond to the human readable value in the comment: fixing it ...",
-			configValueInfo.key,
+			key,
 		)
 		err := runner.EmitIssueWithFix(r, issueMsg, comment.Range,
 			func(f tflint.Fixer) error {
-				return f.ReplaceText(comment.Range, msg+"\n")
+				return f.ReplaceText(comment.Range, commentMsg+"\n")
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("emitting issue: wrong comment for time value: %w", err)
+			return fmt.Errorf("emitting issue: wrong comment for human readable value: %w", err)
 		}
 	}
 	return nil
