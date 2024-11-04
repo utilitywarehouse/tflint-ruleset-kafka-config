@@ -343,8 +343,8 @@ const (
 	retentionTimeAttr = "retention.ms"
 	millisInOneHour   = 60 * 60 * 1000
 	millisInOneDay    = 24 * millisInOneHour
-	millisInOneMonth  = 2629800000
-	millisInOneYear   = 31556952000
+	millisInOneMonth  = 2629800000  // which is 30.4375 days
+	millisInOneYear   = 31556952000 // which is 365.2425 days
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
