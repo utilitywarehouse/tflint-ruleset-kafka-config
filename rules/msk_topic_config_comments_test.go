@@ -105,13 +105,49 @@ resource "kafka_topic" "topic_def" {
 		expected: []*helper.Issue{},
 	},
 	{
-		name: "retention time in years",
+		name: "retention time in fix years",
 		input: `
 resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
     "retention.ms" = "31536000000" # keep data for 1 year 
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "retention time in years not precise",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_years" {
+  name               = "topic_good_retention_comment_years"
+  replication_factor = 3
+  config = {
+    "retention.ms" = "220898482000" # keep data for 7 years 
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "retention time in partial years",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_years" {
+  name               = "topic_good_retention_comment_years"
+  replication_factor = 3
+  config = {
+    "retention.ms" = "47304000000" # keep data for 1.5 years 
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "retention time in partial months",
+		input: `
+resource "kafka_topic" "topic_good_retention_comment_years" {
+  name               = "topic_good_retention_comment_years"
+  replication_factor = 3
+  config = {
+    "retention.ms" = "6480000000" # keep data for 2.5 months 
   }
 }`,
 		expected: []*helper.Issue{},
@@ -285,10 +321,10 @@ func Test_MSKTopicConfigCommentsRule(t *testing.T) {
 			require.NoError(t, rule.Check(runner))
 
 			setExpectedRule(tc.expected, rule)
+			t.Logf("Proposed changes: %s", string(runner.Changes()[fileName]))
 			helper.AssertIssues(t, tc.expected, runner.Issues)
 
 			if tc.fixed != "" {
-				t.Logf("Proposed changes: %s", string(runner.Changes()[fileName]))
 				helper.AssertChanges(t, map[string]string{fileName: tc.fixed}, runner.Changes())
 			} else {
 				assert.Empty(t, runner.Changes())
