@@ -341,6 +341,39 @@ resource "kafka_topic" "topic_def" {
 		},
 	},
 	{
+		name: "max message bytes with value in gigabytes",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "4509715661" # allow for a batch of records maximum 4.2GB
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "max message bytes with value in kilos",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "204800" # allow for a batch of records maximum 200KB
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "max message bytes with value in bytes",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "100" # allow for a batch of records maximum 100B
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
 		name: "max message bytes invalid",
 		input: `
 resource "kafka_topic" "topic_def" {

@@ -386,7 +386,7 @@ func determineByteUnits(bytes int) (float64, string) {
 	}
 
 	kbs := round(floatBytes / bytesInOneKB)
-	if mbs >= 1 {
+	if kbs >= 1 {
 		return kbs, "KB"
 	}
 	return floatBytes, "B"
