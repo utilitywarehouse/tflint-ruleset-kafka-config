@@ -121,6 +121,12 @@ var configByteValueCommentInfos = []configValueCommentInfo{
 		baseComment:      "allow for a batch of records maximum",
 		issueWhenInvalid: true,
 	},
+	{
+		key:              "retention.bytes",
+		infiniteValue:    "-1",
+		baseComment:      "keep on each partition",
+		issueWhenInvalid: true,
+	},
 }
 
 func (r *MSKTopicConfigCommentsRule) validateConfigValuesInComments(
@@ -338,7 +344,7 @@ func (r *MSKTopicConfigCommentsRule) buildDataSizeComment(
 	}
 
 	if dataVal == configValueInfo.infiniteValue {
-		return fmt.Sprintf("# %s unlimited", configValueInfo.baseComment), nil
+		return fmt.Sprintf("# %s unlimited data", configValueInfo.baseComment), nil
 	}
 
 	byteVal, err := strconv.Atoi(dataVal)

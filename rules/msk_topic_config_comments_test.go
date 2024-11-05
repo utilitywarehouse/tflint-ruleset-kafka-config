@@ -393,6 +393,58 @@ resource "kafka_topic" "topic_def" {
 			},
 		},
 	},
+	{
+		name: "retention bytes without a comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "1610612736"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "1610612736" # keep on each partition 1.5GB
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 22},
+				},
+			},
+		},
+	},
+	{
+		name: "retention bytes with outdated value",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "-1" # keep on each partition 3MB
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "-1" # keep on each partition unlimited data
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 30},
+					End:      hcl.Pos{Line: 6, Column: 1},
+				},
+			},
+		},
+	},
 }
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
