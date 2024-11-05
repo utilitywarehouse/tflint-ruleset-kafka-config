@@ -86,14 +86,14 @@ func (r *MSKTopicConfigCommentsRule) validateTopicConfigComments(runner tflint.R
 	return nil
 }
 
-type configTimeValueCommentInfo struct {
+type configValueCommentInfo struct {
 	key              string
 	infiniteValue    string
 	baseComment      string
 	issueWhenInvalid bool
 }
 
-var configTimeValueCommentInfos = []configTimeValueCommentInfo{
+var configTimeValueCommentInfos = []configValueCommentInfo{
 	{
 		key:              retentionTimeAttr,
 		infiniteValue:    "-1",
@@ -114,12 +114,26 @@ var configTimeValueCommentInfos = []configTimeValueCommentInfo{
 	},
 }
 
+var configByteValueCommentInfos = []configValueCommentInfo{
+	{
+		key:              "max.message.bytes",
+		infiniteValue:    "",
+		baseComment:      "allow for a batch of records maximum",
+		issueWhenInvalid: true,
+	},
+}
+
 func (r *MSKTopicConfigCommentsRule) validateConfigValuesInComments(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
 ) error {
 	for _, configValueInfo := range configTimeValueCommentInfos {
 		if err := r.validateTimeConfigValue(runner, configKeyToPairMap, configValueInfo); err != nil {
+			return err
+		}
+	}
+	for _, configValueInfo := range configByteValueCommentInfos {
+		if err := r.validateByteConfigValue(runner, configKeyToPairMap, configValueInfo); err != nil {
 			return err
 		}
 	}
@@ -130,7 +144,7 @@ func (r *MSKTopicConfigCommentsRule) validateConfigValuesInComments(
 func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 	runner tflint.Runner,
 	configKeyToPairMap map[string]hcl.KeyValuePair,
-	configValueInfo configTimeValueCommentInfo,
+	configValueInfo configValueCommentInfo,
 ) error {
 	key := configValueInfo.key
 	timePair, hasConfig := configKeyToPairMap[key]
@@ -147,6 +161,31 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 	}
 
 	if err = r.reportHumanReadableComment(runner, timePair, key, msg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *MSKTopicConfigCommentsRule) validateByteConfigValue(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+	configValueInfo configValueCommentInfo,
+) error {
+	key := configValueInfo.key
+	dataPair, hasConfig := configKeyToPairMap[key]
+	if !hasConfig {
+		return nil
+	}
+
+	msg, err := r.buildDataSizeComment(runner, dataPair, configValueInfo)
+	if err != nil {
+		return err
+	}
+	if msg == "" {
+		return nil
+	}
+
+	if err = r.reportHumanReadableComment(runner, dataPair, key, msg); err != nil {
 		return err
 	}
 	return nil
@@ -256,7 +295,7 @@ func isNotComment(token hclsyntax.Token) bool {
 func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 	runner tflint.Runner,
 	timePair hcl.KeyValuePair,
-	configValueInfo configTimeValueCommentInfo,
+	configValueInfo configValueCommentInfo,
 ) (string, error) {
 	var timeVal string
 	diags := gohcl.DecodeExpression(timePair.Value, nil, &timeVal)
@@ -284,10 +323,73 @@ func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 		return "", nil
 	}
 
-	baseComment := configValueInfo.baseComment
+	return buildCommentForMillis(timeMillis, configValueInfo.baseComment), nil
+}
 
-	msg := buildCommentForMillis(timeMillis, baseComment)
-	return msg, nil
+func (r *MSKTopicConfigCommentsRule) buildDataSizeComment(
+	runner tflint.Runner,
+	dataPair hcl.KeyValuePair,
+	configValueInfo configValueCommentInfo,
+) (string, error) {
+	var dataVal string
+	diags := gohcl.DecodeExpression(dataPair.Value, nil, &dataVal)
+	if diags.HasErrors() {
+		return "", diags
+	}
+
+	if dataVal == configValueInfo.infiniteValue {
+		return fmt.Sprintf("# %s unlimited", configValueInfo.baseComment), nil
+	}
+
+	byteVal, err := strconv.Atoi(dataVal)
+	if err != nil {
+		if configValueInfo.issueWhenInvalid {
+			issueMsg := fmt.Sprintf(
+				"%s must have a valid integer value expressed in bytes",
+				configValueInfo.key,
+			)
+			err := runner.EmitIssue(r, issueMsg, dataPair.Value.Range())
+			if err != nil {
+				return "", fmt.Errorf("emitting issue: invalid data value: %w", err)
+			}
+		}
+
+		return "", nil
+	}
+
+	return buildCommentForBytes(byteVal, configValueInfo.baseComment), nil
+}
+
+func buildCommentForBytes(bytes int, baseComment string) string {
+	byteUnits, unit := determineByteUnits(bytes)
+
+	byteUnitsStr := strconv.FormatFloat(byteUnits, 'f', -1, 64)
+	return fmt.Sprintf("# %s %s%s", baseComment, byteUnitsStr, unit)
+}
+
+const (
+	bytesInOneKB = 1024
+	bytesInOneMB = 1024 * bytesInOneKB
+	bytesInOneGB = 1024 * bytesInOneMB
+)
+
+func determineByteUnits(bytes int) (float64, string) {
+	floatBytes := float64(bytes)
+	gbs := round(floatBytes / bytesInOneGB)
+	if gbs >= 1 {
+		return gbs, "GB"
+	}
+
+	mbs := round(floatBytes / bytesInOneMB)
+	if mbs >= 1 {
+		return mbs, "MB"
+	}
+
+	kbs := round(floatBytes / bytesInOneKB)
+	if mbs >= 1 {
+		return kbs, "KB"
+	}
+	return floatBytes, "B"
 }
 
 func buildCommentForMillis(timeMillis int, baseComment string) string {

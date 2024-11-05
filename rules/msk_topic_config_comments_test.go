@@ -9,7 +9,7 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-var configValueCommentsTests = []topicConfigTestCase{
+var configTimeCommentsTests = []topicConfigTestCase{
 	{
 		name: "retention time without comment",
 		input: `
@@ -313,9 +313,62 @@ resource "kafka_topic" "topic_def" {
 	},
 }
 
+var configByteCommentsTests = []topicConfigTestCase{
+	{
+		name: "max message bytes without a comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "3145728"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "3145728" # allow for a batch of records maximum 3MB
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.message.bytes must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 24},
+				},
+			},
+		},
+	},
+	{
+		name: "max message bytes invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.message.bytes must have a valid integer value expressed in bytes",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 27},
+					End:      hcl.Pos{Line: 5, Column: 40},
+				},
+			},
+		},
+	},
+}
+
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
 	rule := &MSKTopicConfigCommentsRule{}
-	for _, tc := range configValueCommentsTests {
+	var allTests []topicConfigTestCase
+	allTests = append(allTests, configTimeCommentsTests...)
+	allTests = append(allTests, configByteCommentsTests...)
+
+	for _, tc := range allTests {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))
