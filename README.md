@@ -25,6 +25,7 @@ plugin "uw-kafka-config" {
 | [`msk_topic_config`](rules/msk_topic_config.md)                   | Checks the configuration for MSK topics                                                                                          |
 | [`msk_topic_config_comments`](rules/msk_topic_config_comments.md) | Checks the comments for topic configurations expressed in millis                                                                 |
 | [`msk_unique_app_names`](rules/msk_unique_app_names.md)           | Checks that TLS app names are unique                                                                                             |
+| [`msk_app_consume_groups`](rules/msk_app_consume_groups.md)       | Checks that TLS app consume groups are prefixed with a team name                                                                 |
 
 
 ## Building the plugin
