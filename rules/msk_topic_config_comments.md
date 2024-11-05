@@ -30,8 +30,8 @@ resource "kafka_topic" "good_topic" {
     # keep data in primary storage for 1 day
     "local.retention.ms"    = "86400000"
     "retention.ms"          = "2592000000" # keep data for 1 month
-    "max.message.bytes"     = "3145728"    # allow for a batch of records maximum 3MB
-    "retention.bytes"       = "1610612736" # keep on each partition 1.5GB
+    "max.message.bytes"     = "3145728"    # allow for a batch of records maximum 3MiB
+    "retention.bytes"       = "1610612736" # keep on each partition 1.5GiB
     "compression.type"      = "zstd"
   }
 }
