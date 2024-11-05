@@ -374,26 +374,26 @@ func buildCommentForBytes(bytes int, baseComment string) string {
 }
 
 const (
-	bytesInOneKB = 1024
-	bytesInOneMB = 1024 * bytesInOneKB
-	bytesInOneGB = 1024 * bytesInOneMB
+	bytesInOneKiB = 1024
+	bytesInOneMiB = 1024 * bytesInOneKiB
+	bytesInOneGiB = 1024 * bytesInOneMiB
 )
 
 func determineByteUnits(bytes int) (float64, string) {
 	floatBytes := float64(bytes)
-	gbs := round(floatBytes / bytesInOneGB)
+	gbs := round(floatBytes / bytesInOneGiB)
 	if gbs >= 1 {
-		return gbs, "GB"
+		return gbs, "GiB"
 	}
 
-	mbs := round(floatBytes / bytesInOneMB)
+	mbs := round(floatBytes / bytesInOneMiB)
 	if mbs >= 1 {
-		return mbs, "MB"
+		return mbs, "MiB"
 	}
 
-	kbs := round(floatBytes / bytesInOneKB)
+	kbs := round(floatBytes / bytesInOneKiB)
 	if kbs >= 1 {
-		return kbs, "KB"
+		return kbs, "KiB"
 	}
 	return floatBytes, "B"
 }

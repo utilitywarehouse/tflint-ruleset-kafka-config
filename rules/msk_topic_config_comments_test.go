@@ -326,7 +326,7 @@ resource "kafka_topic" "topic_def" {
 resource "kafka_topic" "topic_def" {
   name = "topic-def"
   config = {
-    "max.message.bytes" = "3145728" # allow for a batch of records maximum 3MB
+    "max.message.bytes" = "3145728" # allow for a batch of records maximum 3MiB
   }
 }`,
 		expected: []*helper.Issue{
@@ -346,7 +346,7 @@ resource "kafka_topic" "topic_def" {
 resource "kafka_topic" "topic_def" {
   name = "topic-def"
   config = {
-    "max.message.bytes" = "4509715661" # allow for a batch of records maximum 4.2GB
+    "max.message.bytes" = "4509715661" # allow for a batch of records maximum 4.2GiB
   }
 }`,
 		expected: []*helper.Issue{},
@@ -357,7 +357,7 @@ resource "kafka_topic" "topic_def" {
 resource "kafka_topic" "topic_def" {
   name = "topic-def"
   config = {
-    "max.message.bytes" = "204800" # allow for a batch of records maximum 200KB
+    "max.message.bytes" = "204800" # allow for a batch of records maximum 200KiB
   }
 }`,
 		expected: []*helper.Issue{},
@@ -405,7 +405,7 @@ resource "kafka_topic" "topic_def" {
 resource "kafka_topic" "topic_def" {
   name = "topic-def"
   config = {
-    "retention.bytes" = "1610612736" # keep on each partition 1.5GB
+    "retention.bytes" = "1610612736" # keep on each partition 1.5GiB
   }
 }`,
 		expected: []*helper.Issue{
@@ -425,7 +425,7 @@ resource "kafka_topic" "topic_def" {
 resource "kafka_topic" "topic_def" {
   name = "topic-def"
   config = {
-    "retention.bytes" = "-1" # keep on each partition 3MB
+    "retention.bytes" = "-1" # keep on each partition 3MiB
   }
 }`, fixed: `
 resource "kafka_topic" "topic_def" {
