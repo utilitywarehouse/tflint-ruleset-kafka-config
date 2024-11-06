@@ -191,10 +191,7 @@ func (r *MSKTopicConfigCommentsRule) validateByteConfigValue(
 		return nil
 	}
 
-	if err = r.reportHumanReadableComment(runner, dataPair, key, msg); err != nil {
-		return err
-	}
-	return nil
+	return r.reportHumanReadableComment(runner, dataPair, key, msg)
 }
 
 func (r *MSKTopicConfigCommentsRule) reportHumanReadableComment(
