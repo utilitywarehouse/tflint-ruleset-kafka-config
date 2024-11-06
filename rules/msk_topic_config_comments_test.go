@@ -9,7 +9,7 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 )
 
-var configValueCommentsTests = []topicConfigTestCase{
+var configTimeCommentsTests = []topicConfigTestCase{
 	{
 		name: "retention time without comment",
 		input: `
@@ -313,9 +313,167 @@ resource "kafka_topic" "topic_def" {
 	},
 }
 
+var configByteCommentsTests = []topicConfigTestCase{
+	{
+		name: "max message bytes without a comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "3145728"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "3145728" # allow for a batch of records maximum 3MiB
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.message.bytes must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 24},
+				},
+			},
+		},
+	},
+	{
+		name: "max message bytes with value in gigabytes",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "4509715661" # allow for a batch of records maximum 4.2GiB
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "max message bytes with value in kilos",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "204800" # allow for a batch of records maximum 200KiB
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "max message bytes with value in bytes",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "100" # allow for a batch of records maximum 100B
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		name: "max message bytes invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "max.message.bytes" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "max.message.bytes must have a valid integer value expressed in bytes",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 27},
+					End:      hcl.Pos{Line: 5, Column: 40},
+				},
+			},
+		},
+	},
+	{
+		name: "retention bytes without a comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "1610612736"
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "1610612736" # keep on each partition 1.5GiB
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes must have a comment with the human readable value: adding it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 5},
+					End:      hcl.Pos{Line: 5, Column: 22},
+				},
+			},
+		},
+	},
+	{
+		name: "retention bytes with outdated value",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "-1" # keep on each partition 3MiB
+  }
+}`, fixed: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "-1" # keep on each partition unlimited data
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes value doesn't correspond to the human readable value in the comment: fixing it ...",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 30},
+					End:      hcl.Pos{Line: 6, Column: 1},
+				},
+			},
+		},
+	},
+	{
+		name: "retention bytes invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes must have a valid integer value expressed in bytes",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 25},
+					End:      hcl.Pos{Line: 5, Column: 38},
+				},
+			},
+		},
+	},
+}
+
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
 	rule := &MSKTopicConfigCommentsRule{}
-	for _, tc := range configValueCommentsTests {
+	var allTests []topicConfigTestCase
+	allTests = append(allTests, configTimeCommentsTests...)
+	allTests = append(allTests, configByteCommentsTests...)
+
+	for _, tc := range allTests {
 		t.Run(tc.name, func(t *testing.T) {
 			runner := helper.TestRunner(t, map[string]string{fileName: tc.input})
 			require.NoError(t, rule.Check(runner))

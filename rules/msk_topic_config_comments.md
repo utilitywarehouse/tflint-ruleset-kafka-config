@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Topic configurations expressed in milliseconds must have comments explaining the property and including the human-readable value.
+Topic configurations expressed in milliseconds and bytes must have comments explaining the property and including the human-readable value.
 The comments can be placed after the property definition on the same line or on the line before the definition.
 
 For computing the human-readable values it considers the following:
@@ -13,7 +13,8 @@ It currently checks the properties:
 - retention.ms: explanation must start with `keep data`
 - local.retention.ms: explanation must start with `keep data in primary storage`
 - max.compaction.lag.ms: explanation must start with `allow not compacted keys maximum`
-
+- retention.bytes: explanation must start with `keep on each partition`
+- max.message.bytes: explanation must start with `allow for a batch of records maximum`
 ## Example
 
 ### Good example
@@ -28,7 +29,9 @@ resource "kafka_topic" "good_topic" {
     "cleanup.policy"        = "delete"
     # keep data in primary storage for 1 day
     "local.retention.ms"    = "86400000"
-    "retention.ms"          = "2592000000" # keep data for 1 month 
+    "retention.ms"          = "2592000000" # keep data for 1 month
+    "max.message.bytes"     = "3145728"    # allow for a batch of records maximum 3MiB
+    "retention.bytes"       = "1610612736" # keep on each partition 1.5GiB
     "compression.type"      = "zstd"
   }
 }
