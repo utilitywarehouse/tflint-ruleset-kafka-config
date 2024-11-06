@@ -445,6 +445,26 @@ resource "kafka_topic" "topic_def" {
 			},
 		},
 	},
+	{
+		name: "retention bytes invalid",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name = "topic-def"
+  config = {
+    "retention.bytes" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "retention.bytes must have a valid integer value expressed in bytes",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 5, Column: 25},
+					End:      hcl.Pos{Line: 5, Column: 38},
+				},
+			},
+		},
+	},
 }
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
