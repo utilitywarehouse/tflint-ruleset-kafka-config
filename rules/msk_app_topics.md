@@ -56,7 +56,7 @@ resource "kafka_topic" "example_topic" {
 # second-team defines their consumer inside first-team's module
 module "second_team_indexer" {
   source           = "../../../modules/tls-app"
-  cert_common_name = "second-team/example-consumer"
+  cert_common_name = "second-team/indexer"
 
   # OK: consume topic is defined in this module
   consume_topics   = [kafka_topic.example_topic.name]
