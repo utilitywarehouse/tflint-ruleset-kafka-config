@@ -166,10 +166,7 @@ func (r *MSKTopicConfigCommentsRule) validateTimeConfigValue(
 		return nil
 	}
 
-	if err = r.reportHumanReadableComment(runner, timePair, key, msg); err != nil {
-		return err
-	}
-	return nil
+	return r.reportHumanReadableComment(runner, timePair, key, msg)
 }
 
 func (r *MSKTopicConfigCommentsRule) validateByteConfigValue(
