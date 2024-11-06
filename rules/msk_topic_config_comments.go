@@ -405,6 +405,13 @@ func round(val float64) float64 {
 	return math.Round(val*10) / 10
 }
 
+const (
+	millisInOneHour  = 60 * 60 * 1000
+	millisInOneDay   = 24 * millisInOneHour
+	millisInOneMonth = 30 * millisInOneDay
+	millisInOneYear  = 365 * millisInOneDay
+)
+
 func determineTimeUnits(millis int) (float64, string) {
 	floatMillis := float64(millis)
 	timeInYears := round(floatMillis / millisInOneYear)

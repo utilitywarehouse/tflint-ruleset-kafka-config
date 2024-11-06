@@ -341,10 +341,6 @@ func (r *MSKTopicConfigRule) getAndValidateCleanupPolicyValue(
 
 const (
 	retentionTimeAttr = "retention.ms"
-	millisInOneHour   = 60 * 60 * 1000
-	millisInOneDay    = 24 * millisInOneHour
-	millisInOneMonth  = 30 * millisInOneDay
-	millisInOneYear   = 365 * millisInOneDay
 	// The threshold on retention time when remote storage is supported.
 	tieredStorageThresholdInDays    = 3
 	tieredStorageEnableAttr         = "remote.storage.enable"
