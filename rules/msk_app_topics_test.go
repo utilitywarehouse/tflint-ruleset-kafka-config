@@ -90,6 +90,31 @@ module "consumer" {
 			},
 		},
 		{
+			name: "topic name is not string",
+			files: map[string]string{
+				"file.tf": `
+resource "kafka_topic" "my_topic" {
+	name = "my_topic"
+}
+
+module "consumer" {
+	consume_topics = [kafka_topic.my_topic]
+}
+`,
+			},
+			expected: []*helper.Issue{
+				{
+					Rule:    rule,
+					Message: "value for 'consume_topics' must be a string, not: object",
+					Range: hcl.Range{
+						Filename: "file.tf",
+						Start:    hcl.Pos{Line: 7, Column: 2},
+						End:      hcl.Pos{Line: 7, Column: 41},
+					},
+				},
+			},
+		},
+		{
 			name: "external topic defined outside of consumer/producer",
 			files: map[string]string{
 				"file.tf": `
