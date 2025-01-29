@@ -153,6 +153,22 @@ func (r *MSKAppTopicsRule) reportExternalTopics(
 		return fmt.Errorf("evaluating topic names: %w", diags)
 	}
 	for _, v := range val.AsValueSlice() {
+		if v.Type() != cty.String {
+			err := runner.EmitIssue(
+				r,
+				fmt.Sprintf(
+					"value for '%s' must be a string, not: %s",
+					attrName,
+					v.Type().FriendlyName(),
+				),
+				topicAttr.Range,
+			)
+			if err != nil {
+				return fmt.Errorf("emitting issue: %w", err)
+			}
+			continue
+		}
+
 		name := v.AsString()
 		if _, ok := moduleTopicNames[name]; !ok {
 			err := runner.EmitIssue(
