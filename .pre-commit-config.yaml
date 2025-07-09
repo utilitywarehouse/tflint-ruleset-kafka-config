@@ -4,7 +4,7 @@ default_language_version:
   golang: 1.23.0
 repos:
 -   repo: https://github.com/golangci/golangci-lint
-    rev: v1.63.4
+    rev: v2.2.1
     hooks:
     -   id: golangci-lint-full
     -   id: golangci-lint-config-verify
