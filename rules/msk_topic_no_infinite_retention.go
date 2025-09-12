@@ -107,7 +107,7 @@ func (r *MSKTopicNoInfiniteRetentionRule) validateNoInfiniteRetentionForTopic(
 		return nil
 	}
 
-	if isInfiniteRetention(retTimeIntVal) {
+	if isInfinite(retTimeIntVal) {
 		err := runner.EmitIssue(r, infiniteRetentionMsg, retTimePair.Value.Range())
 		if err != nil {
 			return fmt.Errorf("emitting issue: infinite retention: %w", err)
