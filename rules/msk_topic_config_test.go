@@ -581,6 +581,72 @@ resource "kafka_topic" "topic_with_tiered_storage_local_retention_invalid" {
 		},
 	},
 	{
+		name: "infinite local retention",
+		input: `
+resource "kafka_topic" "topic_with_local_retention_infinite" {
+  name               = "topic_with_local_retention_infinite"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "local.retention.ms"    = "-2"
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "local.retention.ms must have a value less than or equal to 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 9, Column: 31},
+					End:      hcl.Pos{Line: 9, Column: 35},
+				},
+			},
+		},
+	},
+	{
+		name: "local retention bigger than 3 days",
+		input: `
+resource "kafka_topic" "topic_with_local_retention_bigger_than_3_days" {
+  name               = "topic_with_local_retention_bigger_than_3_days"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "local.retention.ms"    = "345600000"
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{
+			{
+				Message: "local.retention.ms must have a value less than or equal to 3 days",
+				Range: hcl.Range{
+					Filename: fileName,
+					Start:    hcl.Pos{Line: 9, Column: 31},
+					End:      hcl.Pos{Line: 9, Column: 42},
+				},
+			},
+		},
+	},
+	{
+		name: "local retention is exactly 3 days",
+		input: `
+resource "kafka_topic" "topic_with_local_retention_3_days" {
+  name               = "topic_with_local_retention_3_days"
+  replication_factor = 3
+  config = {
+    "remote.storage.enable" = "true"
+    "cleanup.policy"        = "delete"
+    "retention.ms"          = "259200001"
+    "local.retention.ms"    = "259200000"
+    "compression.type"      = "zstd"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
 		name: "tiered storage enabled for less than 3 days retention",
 		input: `
 resource "kafka_topic" "topic_with_less_3_days_retention_with_remote_storage" {
