@@ -95,15 +95,17 @@ type configValueCommentInfo struct {
 
 var configTimeValueCommentInfos = []configValueCommentInfo{
 	{
-		key:              retentionTimeAttr,
-		infiniteValue:    "-1",
-		baseComment:      "keep data",
+		key:           retentionTimeAttr,
+		infiniteValue: "-1",
+		baseComment:   "keep data",
+		// the invalid value is handled in the topic config rule
 		issueWhenInvalid: false,
 	},
 	{
-		key:              localRetentionTimeAttr,
-		infiniteValue:    "-2",
-		baseComment:      localRetentionTimeCommentBase,
+		key:           localRetentionTimeAttr,
+		infiniteValue: "-2",
+		baseComment:   localRetentionTimeCommentBase,
+		// the invalid value is handled in the topic config rule
 		issueWhenInvalid: false,
 	},
 	{
