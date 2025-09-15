@@ -67,13 +67,12 @@ resource "kafka_topic" "topic_wrong_retention_comment" {
 		},
 	},
 	{
-		name: "retention time good infinite comment",
+		name: "retention time infinite - don't force comment",
 		input: `
 resource "kafka_topic" "topic_good_retention_comment_infinite" {
   name               = "topic_good_retention_comment_infinite"
   replication_factor = 3
   config = {
-    # keep data forever
     "retention.ms" = "-1"
   }
 }`,
@@ -229,6 +228,19 @@ resource "kafka_topic" "topic_def" {
   replication_factor = 3
   config = {
     "local.retention.ms" = "invalid-val"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
+	{
+		// the infinite value is validated in the msk_topic_config rule
+		name: "local retention time infinite - don't force comment",
+		input: `
+resource "kafka_topic" "topic_def" {
+  name               = "topic_def"
+  replication_factor = 3
+  config = {
+    "local.retention.ms" = "-2"
   }
 }`,
 		expected: []*helper.Issue{},

@@ -87,45 +87,45 @@ func (r *MSKTopicConfigCommentsRule) validateTopicConfigComments(runner tflint.R
 }
 
 type configValueCommentInfo struct {
-	key              string
-	infiniteValue    string
-	baseComment      string
-	issueWhenInvalid bool
+	key                 string
+	commentWhenInfinite bool
+	baseComment         string
+	issueWhenInvalid    bool
 }
 
 var configTimeValueCommentInfos = []configValueCommentInfo{
 	{
-		key:              retentionTimeAttr,
-		infiniteValue:    "-1",
-		baseComment:      "keep data",
-		issueWhenInvalid: false,
+		key:                 retentionTimeAttr,
+		commentWhenInfinite: false, // the infinite value is handled in the topic no infinite retention rule and putting a comment would interfere with the comment for suppressing that rule
+		baseComment:         "keep data",
+		issueWhenInvalid:    false, // the invalid value is handled in the topic config rule
 	},
 	{
-		key:              localRetentionTimeAttr,
-		infiniteValue:    "-2",
-		baseComment:      localRetentionTimeCommentBase,
-		issueWhenInvalid: false,
+		key:                 localRetentionTimeAttr,
+		baseComment:         localRetentionTimeCommentBase,
+		commentWhenInfinite: false, // infinite values are handled in the topic config rule and strictly forbidden for this property
+		issueWhenInvalid:    false, // the invalid value is handled in the topic config rule
 	},
 	{
-		key:              "max.compaction.lag.ms",
-		infiniteValue:    "",
-		baseComment:      "allow not compacted keys maximum",
-		issueWhenInvalid: true,
+		key:                 "max.compaction.lag.ms",
+		baseComment:         "allow not compacted keys maximum",
+		commentWhenInfinite: false, // this property doesn't support infinite values
+		issueWhenInvalid:    true,
 	},
 }
 
 var configByteValueCommentInfos = []configValueCommentInfo{
 	{
-		key:              "max.message.bytes",
-		infiniteValue:    "",
-		baseComment:      "allow for a batch of records maximum",
-		issueWhenInvalid: true,
+		key:                 "max.message.bytes",
+		commentWhenInfinite: false, // this property doesn't support infinite values
+		baseComment:         "allow for a batch of records maximum",
+		issueWhenInvalid:    true,
 	},
 	{
-		key:              "retention.bytes",
-		infiniteValue:    "-1",
-		baseComment:      "keep on each partition",
-		issueWhenInvalid: true,
+		key:                 "retention.bytes",
+		commentWhenInfinite: true,
+		baseComment:         "keep on each partition",
+		issueWhenInvalid:    true,
 	},
 }
 
@@ -303,10 +303,6 @@ func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 		return "", diags
 	}
 
-	if timeVal == configValueInfo.infiniteValue {
-		return fmt.Sprintf("# %s forever", configValueInfo.baseComment), nil
-	}
-
 	timeMillis, err := strconv.Atoi(timeVal)
 	if err != nil {
 		if configValueInfo.issueWhenInvalid {
@@ -320,6 +316,14 @@ func (r *MSKTopicConfigCommentsRule) buildDurationComment(
 			}
 		}
 
+		return "", nil
+	}
+
+	// don't require a comment for infinite values
+	if isInfinite(timeMillis) {
+		if configValueInfo.commentWhenInfinite {
+			return fmt.Sprintf("# %s forever", configValueInfo.baseComment), nil
+		}
 		return "", nil
 	}
 
@@ -337,10 +341,6 @@ func (r *MSKTopicConfigCommentsRule) buildDataSizeComment(
 		return "", diags
 	}
 
-	if dataVal == configValueInfo.infiniteValue {
-		return fmt.Sprintf("# %s unlimited data", configValueInfo.baseComment), nil
-	}
-
 	byteVal, err := strconv.Atoi(dataVal)
 	if err != nil {
 		if configValueInfo.issueWhenInvalid {
@@ -354,6 +354,13 @@ func (r *MSKTopicConfigCommentsRule) buildDataSizeComment(
 			}
 		}
 
+		return "", nil
+	}
+
+	if isInfinite(byteVal) {
+		if configValueInfo.commentWhenInfinite {
+			return fmt.Sprintf("# %s unlimited data", configValueInfo.baseComment), nil
+		}
 		return "", nil
 	}
 
