@@ -432,7 +432,7 @@ func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 		return diags
 	}
 
-	_, err := strconv.Atoi(localRetTimeVal)
+	localRetTimeIntVal, err := strconv.Atoi(localRetTimeVal)
 	if err != nil {
 		msg := fmt.Sprintf(
 			"%s must have a valid integer value expressed in milliseconds",
@@ -443,6 +443,18 @@ func (r *MSKTopicConfigRule) validateLocalRetentionDefined(
 			return fmt.Errorf("emitting issue: invalid local retention time: %w", err)
 		}
 		return nil
+	}
+
+	if isInfinite(localRetTimeIntVal) || localRetTimeIntVal > tieredStorageThresholdInDays*millisInOneDay {
+		msg := fmt.Sprintf(
+			"%s must have a value less than or equal to %d days",
+			localRetentionTimeAttr,
+			tieredStorageThresholdInDays,
+		)
+		err := runner.EmitIssue(r, msg, localRetTimePair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: local retention time too large: %w", err)
+		}
 	}
 
 	return nil

@@ -11,6 +11,7 @@ When cleanup policy is 'delete':
 - 'retention.ms' must be specified in the config map with a valid int value expressed in milliseconds
 - for a retention period of 3 days or more, tiered storage must be enabled and the local.retention.ms parameter must be defined
 - for a retention period less than 3 days, tiered storage must be disabled and the local.retention.ms parameter must not be defined.
+- local.retention.ms must be less or equal to 3 days, as after 3 days, remote storage can be enabled, and we should keep as much as possible in the remote storage, which is flexible.
   See the [AWS docs](https://docs.aws.amazon.com/msk/latest/developerguide/msk-tiered-storage.html#msk-tiered-storage-constraints).
 
 When cleanup policy is 'compact':
