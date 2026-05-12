@@ -900,6 +900,29 @@ resource "kafka_topic" "good topic" {
 }`,
 		expected: []*helper.Issue{},
 	},
+	{
+		name: "good topic with count driven by a boolean variable",
+		input: `
+variable "enable_topic" {
+  type    = bool
+  default = true
+}
+resource "kafka_topic" "good_topic" {
+  count              = var.enable_topic ? 1 : 0
+  name               = "pubsub.good-topic.normal"
+  replication_factor = 3
+  partitions         = 5
+  config = {
+    "remote.storage.enable" = "true"
+    "local.retention.ms"    = "86400000"
+    "retention.ms"          = "259200000"
+    "max.message.bytes"     = "104857600"
+    "compression.type"      = "zstd"
+    "cleanup.policy"        = "delete"
+  }
+}`,
+		expected: []*helper.Issue{},
+	},
 }
 
 func Test_MSKTopicConfigRule(t *testing.T) {
