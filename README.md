@@ -61,12 +61,8 @@ For releasing the binaries for the plugin you just need to create a Github relea
 
 ## Linting
 
-Linting is handled via `pre-commit`. Follow the [install
-instructions](https://pre-commit.com/#install) then install the hooks:
-
 ``` console
-$ pre-commit install
-$ pre-commit run --all-hooks
+make lint
 ```
 
 ## Debugging
@@ -79,11 +75,11 @@ Terraform code you will need to.
 2.  Enable the plugin in the repo, if the plugin is already installed, be sure
     to remove references to source and version (other wise it will install from
     there):
-    
+
     ``` hcl
     plugin "uw-kafka-config" {
       enabled = true
-    
+
       # comment this out if it exists, ensure we use the plugin
       # we just installed, and not building from upstream source
       #version = "1.1.0"
@@ -96,7 +92,7 @@ Terraform code you will need to.
 The plugin expects to be run from the directory containing the files you want
 you'll need to change directory first and make sure you pass the :
 
-``` 
+```
 $ cd ./path/to/debug
 $ tflint --config=$(git rev-parse --show-toplevel)/.tflint.hcl
 ```
