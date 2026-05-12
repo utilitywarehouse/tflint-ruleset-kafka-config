@@ -149,9 +149,15 @@ func (r *MSKTopicConfigRule) validateAndGetConfigAttr(
 }
 
 func constructConfigKeyToPairMap(configAttr *hclext.Attribute) (map[string]hcl.KeyValuePair, error) {
-	configExpr, ok := configAttr.Expr.(*hclsyntax.ObjectConsExpr)
+	// hclext may wrap expressions in BoundExpr when resolving values (e.g. when
+	// a resource uses count/for_each with variable references). Unwrap first.
+	rawExpr := configAttr.Expr
+	if bound, ok := rawExpr.(*hclext.BoundExpr); ok {
+		rawExpr = bound.UnwrapExpression()
+	}
+	configExpr, ok := rawExpr.(*hclsyntax.ObjectConsExpr)
 	if !ok {
-		return nil, fmt.Errorf("could not convert 'config' of type %T to hclsyntax.ObjectConsExpr", configExpr)
+		return nil, fmt.Errorf("could not convert 'config' of type %T to hclsyntax.ObjectConsExpr", rawExpr)
 	}
 
 	res := make(map[string]hcl.KeyValuePair, len(configExpr.ExprMap()))
