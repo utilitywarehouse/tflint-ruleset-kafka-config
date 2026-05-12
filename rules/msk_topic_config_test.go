@@ -4,10 +4,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/helper"
 	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type topicConfigTestCase struct {
@@ -905,7 +908,7 @@ resource "kafka_topic" "good topic" {
 func Test_MSKTopicConfigRule(t *testing.T) {
 	rule := &MSKTopicConfigRule{}
 
-	var allTests []topicConfigTestCase
+	var allTests []topicConfigTestCase // nolint:prealloc // these are just tests
 	allTests = append(allTests, replicationFactorTests...)
 	allTests = append(allTests, compressionTypeTests...)
 	allTests = append(allTests, cleanupPolicyTests...)
@@ -936,4 +939,38 @@ func setExpectedRule(expected helper.Issues, rule tflint.Rule) {
 	for _, exp := range expected {
 		exp.Rule = rule
 	}
+}
+
+func Test_constructConfigKeyToPairMap_BoundExpr(t *testing.T) {
+	// When tflint evaluates resources with count/for_each that reference
+	// variables, it wraps attribute expressions in hclext.BoundExpr.
+	// constructConfigKeyToPairMap must unwrap BoundExpr to access the
+	// underlying ObjectConsExpr.
+	src := `config = {
+  "cleanup.policy"   = "delete"
+  "compression.type" = "zstd"
+}`
+	f, diags := hclsyntax.ParseConfig([]byte(src), "test.tf", hcl.Pos{Line: 1, Column: 1})
+	require.False(t, diags.HasErrors(), diags.Error())
+
+	attrs, diags := f.Body.JustAttributes()
+	require.False(t, diags.HasErrors(), diags.Error())
+
+	configHCLAttr := attrs["config"]
+	require.NotNil(t, configHCLAttr)
+
+	// Wrap the expression in BoundExpr, simulating what tflint does over gRPC
+	// for resources with count/for_each.
+	wrappedExpr := hclext.BindValue(cty.EmptyObjectVal, configHCLAttr.Expr)
+
+	boundAttr := &hclext.Attribute{
+		Name:  "config",
+		Expr:  wrappedExpr,
+		Range: configHCLAttr.Range,
+	}
+
+	result, err := constructConfigKeyToPairMap(boundAttr)
+	require.NoError(t, err)
+	assert.Contains(t, result, "cleanup.policy")
+	assert.Contains(t, result, "compression.type")
 }

@@ -85,7 +85,7 @@ resource "kafka_topic" "topic_good_retention_comment_months" {
   name               = "topic_good_retention_comment_months"
   replication_factor = 3
   config = {
-    "retention.ms" = "5184000000" # keep data for 2 months 
+    "retention.ms" = "5184000000" # keep data for 2 months
   }
 }`,
 		expected: []*helper.Issue{},
@@ -110,7 +110,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "31536000000" # keep data for 1 year 
+    "retention.ms" = "31536000000" # keep data for 1 year
   }
 }`,
 		expected: []*helper.Issue{},
@@ -122,7 +122,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "220898482000" # keep data for 7 years 
+    "retention.ms" = "220898482000" # keep data for 7 years
   }
 }`,
 		expected: []*helper.Issue{},
@@ -134,7 +134,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "47304000000" # keep data for 1.5 years 
+    "retention.ms" = "47304000000" # keep data for 1.5 years
   }
 }`,
 		expected: []*helper.Issue{},
@@ -146,7 +146,7 @@ resource "kafka_topic" "topic_good_retention_comment_years" {
   name               = "topic_good_retention_comment_years"
   replication_factor = 3
   config = {
-    "retention.ms" = "6480000000" # keep data for 2.5 months 
+    "retention.ms" = "6480000000" # keep data for 2.5 months
   }
 }`,
 		expected: []*helper.Issue{},
@@ -481,7 +481,7 @@ resource "kafka_topic" "topic_def" {
 
 func Test_MSKTopicConfigCommentsRule(t *testing.T) {
 	rule := &MSKTopicConfigCommentsRule{}
-	var allTests []topicConfigTestCase
+	var allTests []topicConfigTestCase // nolint:prealloc // these are just tests
 	allTests = append(allTests, configTimeCommentsTests...)
 	allTests = append(allTests, configByteCommentsTests...)
 
