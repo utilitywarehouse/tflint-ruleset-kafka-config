@@ -905,7 +905,7 @@ resource "kafka_topic" "good topic" {
 func Test_MSKTopicConfigRule(t *testing.T) {
 	rule := &MSKTopicConfigRule{}
 
-	var allTests []topicConfigTestCase
+	var allTests []topicConfigTestCase // nolint:prealloc // these are just tests
 	allTests = append(allTests, replicationFactorTests...)
 	allTests = append(allTests, compressionTypeTests...)
 	allTests = append(allTests, cleanupPolicyTests...)

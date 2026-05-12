@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           go mod tidy
-          
+
           if ! git diff --quiet --exit-code -- go.mod go.sum
           then
             echo 'modules are not tidy, you need to run `go mod tidy`' >&2
@@ -69,18 +69,9 @@ jobs:
           go-version-file: 'go.mod'
       - name: Lint
         uses: golangci/golangci-lint-action@v9
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    env:
-      # we run this separately using golangci/golangci-lint-action
-      # which handles setup, the extra caching etc. for us
-      SKIP: golangci-lint-full
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@v2
+      - name: govulncheck
+        uses: golang/govulncheck-action@v1
         with:
-          egress-policy: audit
-
-      - uses: actions/checkout@v5
-      - uses: pre-commit/action@v3.0.1
+          repo-checkout: false
+          go-version-file: 'go.mod'
+          cache: true

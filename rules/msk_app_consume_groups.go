@@ -92,7 +92,7 @@ func (r *MSKAppConsumeGroupsRule) validateConsumeGroups(runner tflint.Runner, ap
 
 		var consumeGroupNames []string
 		if err := runner.EvaluateExpr(consumeGroupAttr.Expr, &consumeGroupNames, nil); err != nil {
-			return fmt.Errorf("decoding attribute '%s': %v", consumeGroupAttrName, err)
+			return fmt.Errorf("decoding attribute '%s': %w", consumeGroupAttrName, err)
 		}
 		for _, name := range consumeGroupNames {
 			if !strings.Contains(name, consumeGroupSepChar) {
