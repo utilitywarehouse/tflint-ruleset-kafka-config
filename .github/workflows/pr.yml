@@ -19,7 +19,7 @@ jobs:
         egress-policy: audit
 
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
@@ -38,7 +38,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: mod-tidy
         shell: bash
         run: |
@@ -62,7 +62,7 @@ jobs:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
