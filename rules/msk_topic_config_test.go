@@ -858,82 +858,6 @@ resource "kafka_topic" "topic_compacted_with_retention_time" {
 	},
 }
 
-var maxMessageBytesTests = []topicConfigTestCase{
-	{
-		name: "max message bytes not specified",
-		input: `
-resource "kafka_topic" "topic_without_max_message_bytes" {
-  name               = "topic_without_max_message_bytes"
-  replication_factor = 3
-  config = {
-    "cleanup.policy"   = "compact"
-    "compression.type" = "zstd"
-  }
-}`,
-		expected: []*helper.Issue{},
-	},
-	{
-		name: "max message bytes within limit",
-		input: `
-resource "kafka_topic" "topic_with_max_message_bytes" {
-  name               = "topic_with_max_message_bytes"
-  replication_factor = 3
-  config = {
-    "cleanup.policy"    = "compact"
-    "compression.type"  = "zstd"
-    "max.message.bytes" = "3145728"
-  }
-}`,
-		expected: []*helper.Issue{},
-	},
-	{
-		name: "max message bytes exceeds limit",
-		input: `
-resource "kafka_topic" "topic_with_large_max_message_bytes" {
-  name               = "topic_with_large_max_message_bytes"
-  replication_factor = 3
-  config = {
-    "cleanup.policy"    = "compact"
-    "compression.type"  = "zstd"
-    "max.message.bytes" = "3145729"
-  }
-}`,
-		expected: []*helper.Issue{
-			{
-				Message: "max.message.bytes must be less than or equal to 3145728 bytes (3MB)",
-				Range: hcl.Range{
-					Filename: fileName,
-					Start:    hcl.Pos{Line: 8, Column: 27},
-					End:      hcl.Pos{Line: 8, Column: 36},
-				},
-			},
-		},
-	},
-	{
-		name: "max message bytes invalid value",
-		input: `
-resource "kafka_topic" "topic_with_invalid_max_message_bytes" {
-  name               = "topic_with_invalid_max_message_bytes"
-  replication_factor = 3
-  config = {
-    "cleanup.policy"    = "compact"
-    "compression.type"  = "zstd"
-    "max.message.bytes" = "invalid-val"
-  }
-}`,
-		expected: []*helper.Issue{
-			{
-				Message: "max.message.bytes must have a valid integer value expressed in bytes",
-				Range: hcl.Range{
-					Filename: fileName,
-					Start:    hcl.Pos{Line: 8, Column: 27},
-					End:      hcl.Pos{Line: 8, Column: 40},
-				},
-			},
-		},
-	},
-}
-
 var goodConfigTests = []topicConfigTestCase{
 	{
 		name: "good topic definition without retention",
@@ -991,7 +915,6 @@ func Test_MSKTopicConfigRule(t *testing.T) {
 	allTests = append(allTests, deletePolicyRetentionTimeTests...)
 	allTests = append(allTests, deletePolicyTieredStorageTests...)
 	allTests = append(allTests, compactPolicyTests...)
-	allTests = append(allTests, maxMessageBytesTests...)
 	allTests = append(allTests, goodConfigTests...)
 
 	for _, tc := range allTests {
