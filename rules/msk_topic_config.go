@@ -96,6 +96,10 @@ func (r *MSKTopicConfigRule) validateTopicConfig(runner tflint.Runner, topic *hc
 	if err = r.validateCleanupPolicyConfig(runner, configAttr, configKeyToPairMap); err != nil {
 		return err
 	}
+
+	if err := r.validateMaxMessageBytes(runner, configKeyToPairMap); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -630,6 +634,47 @@ func (r *MSKTopicConfigRule) getAndValidateRetentionTime(
 		return nil, nil
 	}
 	return &retTimeIntVal, nil
+}
+
+const (
+	maxMessageBytesAttr  = "max.message.bytes"
+	maxMessageBytesLimit = 3 * 1024 * 1024 // 3MB
+)
+
+func (r *MSKTopicConfigRule) validateMaxMessageBytes(
+	runner tflint.Runner,
+	configKeyToPairMap map[string]hcl.KeyValuePair,
+) error {
+	mmbPair, hasMmb := configKeyToPairMap[maxMessageBytesAttr]
+	if !hasMmb {
+		return nil
+	}
+
+	var mmbVal string
+	diags := gohcl.DecodeExpression(mmbPair.Value, nil, &mmbVal)
+	if diags.HasErrors() {
+		return diags
+	}
+
+	mmbIntVal, err := strconv.Atoi(mmbVal)
+	if err != nil {
+		msg := fmt.Sprintf("%s must have a valid integer value expressed in bytes", maxMessageBytesAttr)
+		err := runner.EmitIssue(r, msg, mmbPair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: invalid max message bytes: %w", err)
+		}
+		return nil
+	}
+
+	if mmbIntVal > maxMessageBytesLimit {
+		msg := fmt.Sprintf("%s must be less than or equal to %d bytes (3MB)", maxMessageBytesAttr, maxMessageBytesLimit)
+		err := runner.EmitIssue(r, msg, mmbPair.Value.Range())
+		if err != nil {
+			return fmt.Errorf("emitting issue: max message bytes too large: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *MSKTopicConfigRule) validateRetentionTimeNotDefined(
