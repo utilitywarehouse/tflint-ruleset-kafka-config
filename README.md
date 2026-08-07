@@ -24,6 +24,7 @@ plugin "uw-kafka-config" {
 | [`msk_topic_name`](rules/msk_topic_name.md)                       | Requires defined topics in a module to belong to that team.                                                                      |
 | [`msk_topic_config`](rules/msk_topic_config.md)                   | Checks the configuration for MSK topics                                                                                          |
 | [`msk_topic_config_comments`](rules/msk_topic_config_comments.md) | Checks the comments for topic configurations expressed in millis                                                                 |
+| [`msk_topic_max_message_bytes`](rules/msk_topic_max_message_bytes.md) | Checks that a topic's max.message.bytes, when specified, does not exceed 3MB                                                 |
 | [`msk_unique_app_names`](rules/msk_unique_app_names.md)           | Checks that TLS app names are unique                                                                                             |
 | [`msk_app_consume_groups`](rules/msk_app_consume_groups.md)       | Checks that TLS app consume groups are prefixed with a team name                                                                 |
 
