@@ -1,6 +1,6 @@
 module github.com/utilitywarehouse/tflint-ruleset-kafka-config
 
-go 1.26.10
+go 1.27.3
 
 require (
 	github.com/hashicorp/hcl/v2 v2.24.0
